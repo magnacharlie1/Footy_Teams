@@ -1,4 +1,13 @@
-export default function Home() {
+import { redirect } from "next/navigation";
+
+import { auth } from "@/auth";
+
+export default async function Home() {
+  const session = await auth();
+  if (session?.user) {
+    redirect("/groups");
+  }
+
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-10 px-6 py-16">
       <div className="flex flex-col gap-4">
