@@ -1,0 +1,262 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum GroupRole {
+  ADMIN
+  MEMBER
+}
+
+enum SessionStatus {
+  DRAFT
+  PUBLISHED
+  COMPLETED
+}
+
+enum KitType {
+  BIBS
+  NON_BIBS
+  OTHER
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+
+  accounts        Account[]
+  sessions        AuthSession[]
+  groupsCreated   Group[]        @relation("GroupsCreated")
+  groupMembers    GroupMember[]
+  groupPlayers    GroupPlayer[]
+  sessionsCreated MatchSession[] @relation("SessionsCreated")
+  motmVotes       MotmVote[]     @relation("UserVotes")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model AuthSession {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Group {
+  id                     String   @id @default(cuid())
+  name                   String
+  timezone               String   @default("Europe/London")
+  defaultDayOfWeek       Int?
+  defaultStartTimeHHMM   String?  @db.VarChar(5)
+  defaultDurationMinutes Int?
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  createdByUserId        String?
+
+  createdBy   User?          @relation("GroupsCreated", fields: [createdByUserId], references: [id])
+  members     GroupMember[]
+  invites     GroupInvite[]
+  players     GroupPlayer[]
+  sessions    MatchSession[]
+  PlayerAlias PlayerAlias[]
+}
+
+model GroupMember {
+  id       String    @id @default(cuid())
+  groupId  String
+  userId   String
+  role     GroupRole @default(MEMBER)
+  isActive Boolean   @default(true)
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([groupId, userId])
+}
+
+model GroupInvite {
+  id        String   @id @default(cuid())
+  groupId   String
+  code      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model GroupPlayer {
+  id             String   @id @default(cuid())
+  groupId        String
+  userId         String?
+  displayName    String
+  normalizedName String
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id])
+
+  aliases      PlayerAlias[]
+  participants SessionParticipant[]
+  assignments  TeamAssignment[]
+  motmVotes    MotmVote[]           @relation("PlayerVotes")
+
+  @@unique([groupId, normalizedName])
+  @@index([userId])
+}
+
+model PlayerAlias {
+  id              String   @id @default(cuid())
+  groupId         String
+  groupPlayerId   String
+  aliasNormalized String
+  createdAt       DateTime @default(now())
+
+  group  Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  player GroupPlayer @relation(fields: [groupPlayerId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, aliasNormalized])
+}
+
+model MatchSession {
+  id              String        @id @default(cuid())
+  groupId         String
+  sessionDate     DateTime
+  status          SessionStatus @default(DRAFT)
+  numTeams        Int           @default(2)
+  createdByUserId String?
+  publishedAt     DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  group          Group                @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy      User?                @relation("SessionsCreated", fields: [createdByUserId], references: [id])
+  participants   SessionParticipant[]
+  teams          Team[]
+  fixtures       Fixture[]
+  motmVotes      MotmVote[]
+  TeamAssignment TeamAssignment[]
+
+  @@index([groupId])
+  @@index([sessionDate])
+}
+
+model SessionParticipant {
+  id            String   @id @default(cuid())
+  sessionId     String
+  groupPlayerId String
+  joinedAt      DateTime @default(now())
+
+  session     MatchSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  player      GroupPlayer      @relation(fields: [groupPlayerId], references: [id])
+  assignments TeamAssignment[]
+
+  @@unique([sessionId, groupPlayerId])
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  sessionId String
+  index     Int
+  label     String
+  kitType   KitType  @default(OTHER)
+  createdAt DateTime @default(now())
+
+  session         MatchSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  assignments     TeamAssignment[]
+  fixturesAsTeamA Fixture[]        @relation("TeamAFixtures")
+  fixturesAsTeamB Fixture[]        @relation("TeamBFixtures")
+
+  @@unique([sessionId, index])
+}
+
+model TeamAssignment {
+  id            String   @id @default(cuid())
+  sessionId     String
+  teamId        String
+  groupPlayerId String
+  positionSlot  Int?
+  createdAt     DateTime @default(now())
+
+  session              MatchSession        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  team                 Team                @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player               GroupPlayer         @relation(fields: [groupPlayerId], references: [id])
+  SessionParticipant   SessionParticipant? @relation(fields: [sessionParticipantId], references: [id])
+  sessionParticipantId String?
+
+  @@unique([sessionId, groupPlayerId])
+}
+
+model Fixture {
+  id           String   @id @default(cuid())
+  sessionId    String
+  fixtureIndex Int
+  teamAId      String
+  teamBId      String
+  teamAScore   Int      @default(0)
+  teamBScore   Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  session MatchSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  teamA   Team         @relation("TeamAFixtures", fields: [teamAId], references: [id])
+  teamB   Team         @relation("TeamBFixtures", fields: [teamBId], references: [id])
+
+  @@unique([sessionId, fixtureIndex])
+  @@index([teamAId])
+  @@index([teamBId])
+}
+
+model MotmVote {
+  id                 String   @id @default(cuid())
+  sessionId          String
+  voterUserId        String
+  votedGroupPlayerId String
+  createdAt          DateTime @default(now())
+
+  session     MatchSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  voter       User         @relation("UserVotes", fields: [voterUserId], references: [id])
+  votedPlayer GroupPlayer  @relation("PlayerVotes", fields: [votedGroupPlayerId], references: [id])
+
+  @@unique([sessionId, voterUserId])
+  @@index([votedGroupPlayerId])
+}
