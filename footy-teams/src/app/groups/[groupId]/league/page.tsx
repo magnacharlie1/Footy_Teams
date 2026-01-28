@@ -128,6 +128,8 @@ export default async function LeaguePage({ params, searchParams }: Props) {
         return stat.totalWinPoints;
       case "weightedWinPoints":
         return stat.weightedWinPoints;
+      default:
+        return stat.totalPoints;
     }
   };
   const byMetricDesc = (
