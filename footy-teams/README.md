@@ -6,7 +6,7 @@ Mobile-first Next.js app for organising weekly football sessions: paste WhatsApp
 
 - Next.js (App Router) + TypeScript
 - Tailwind CSS v3 + shadcn/ui components
-- Prisma ORM (Postgres) with docker-compose for local database
+- Prisma ORM (SQLite by default; Postgres optional via docker-compose)
 - Auth.js (NextAuth) with Google and Apple OAuth (coming in later steps)
 - Zod for validation and Luxon for timezone-safe logic (coming soon)
 
@@ -24,20 +24,14 @@ npm install
 cp .env.example .env.local
 ```
 
-3. Start Postgres (local dev):
-
-```bash
-docker-compose up -d db
-```
-
-4. Run Prisma migrations and seed demo data:
+3. Run Prisma migrations and seed demo data (creates a local `dev.db` SQLite file):
 
 ```bash
 npx prisma migrate dev --name init
 npx prisma db seed
 ```
 
-5. Run the dev server:
+4. Run the dev server:
 
 ```bash
 npm run dev
@@ -55,7 +49,7 @@ Required values for Auth.js OAuth:
 - `NEXTAUTH_URL` (e.g., `http://localhost:3000`)
 - `SEED_ADMIN_EMAIL` (optional for seed user, defaults to admin@example.com)
 
-Database: `DATABASE_URL` (default points to docker-compose Postgres).
+Database: Postgres. Set `DATABASE_URL` to the pooled connection string (Neon), and `DATABASE_DIRECT_URL` to the non-pooled direct connection string. For local dev you can start Postgres with `docker-compose up -d db`.
 
 ## Scripts
 
@@ -66,21 +60,25 @@ Database: `DATABASE_URL` (default points to docker-compose Postgres).
 - `npm run prisma:generate` – regenerate Prisma client
 - `npm run prisma:format` – format Prisma schema
 
-## Scripts
+## Deployment (Netlify + Neon)
 
-- `npm run dev` – start Next dev server
-- `npm run lint` – run ESLint
-- `npm run build` – production build
-
-## Deployment
-
-Netlify configuration lives in `netlify.toml` and uses the official Next.js runtime plugin. Set the required environment variables (database + NextAuth secret + Google/Apple OAuth) in Netlify before deploying. Build command: `npm run build`, publish: `.next`.
+1. Create a Neon project and grab:
+   - Pooled connection string (for `DATABASE_URL`).
+   - Direct connection string (for `DATABASE_DIRECT_URL`).
+2. Set Netlify environment variables:
+   - `DATABASE_URL`, `DATABASE_DIRECT_URL`
+   - `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
+   - OAuth secrets if you plan to enable Google/Apple
+3. Regenerate Postgres migrations locally (once):
+   - Delete `prisma/migrations` if they were generated for SQLite.
+   - Run `npx prisma migrate dev --name init` against Postgres.
+4. Deploy. Netlify build will run `prisma migrate deploy` before build.
 
 ## MVP checklist
 
 - [x] Next.js App Router + Tailwind + shadcn/ui scaffold
 - [x] Prisma schema for users, groups, invites, players, sessions, teams, fixtures, MoTM votes
-- [x] Dockerised Postgres for local dev
+- [x] Database ready for local dev (SQLite by default; Postgres optional)
 - [x] Auth.js with Google/Apple providers (Prisma adapter)
 - [x] WhatsApp parsing utility with tests
 - [x] Team balancing/formation + scoring utilities with tests

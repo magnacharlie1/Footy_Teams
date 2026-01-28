@@ -14,26 +14,36 @@ import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState, useTransition } from "react";
 
 import { autoBalanceTeams, assignPositionSlots, type TeamPlayer } from "@/lib/team-balance";
-import { saveTeamsAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type PlayerInput = TeamPlayer & { teamId: string | null };
 
+type TeamInfo = { id: string; label: string; index: number; kitType: string };
+
 type Props = {
-  groupId: string;
-  sessionId: string;
+  canEdit: boolean;
   numTeams: 2 | 4;
-  teams: { id: string; label: string; index: number }[];
+  teams: TeamInfo[];
   players: PlayerInput[];
+  saveAction: (input: {
+    assignments: { playerId: string; teamId: string; positionSlot?: number | null }[];
+    publish?: boolean;
+  }) => Promise<void>;
 };
 
 type AssignmentsState = Record<string, string>; // playerId -> containerId
 
 const BENCH_ID = "bench";
 
-export function TeamBuilder({ groupId, sessionId, numTeams, teams, players }: Props) {
+export function TeamBuilder({
+  canEdit,
+  numTeams,
+  teams,
+  players,
+  saveAction,
+}: Props) {
   const [assignments, setAssignments] = useState<AssignmentsState>(() => {
     const next: AssignmentsState = {};
     for (const player of players) {
@@ -59,16 +69,20 @@ export function TeamBuilder({ groupId, sessionId, numTeams, teams, players }: Pr
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
+    if (!canEdit) return;
     const { active, over } = event;
     if (!over) return;
     const activeId = active.id as string;
     const overId = over.id as string;
-    if (assignments[activeId] === overId) return;
-    setAssignments((prev) => ({ ...prev, [activeId]: overId }));
+    const containerId = getContainerId(overId, itemsByContainer);
+    if (!containerId) return;
+    if (assignments[activeId] === containerId) return;
+    setAssignments((prev) => ({ ...prev, [activeId]: containerId }));
     setPositions((prev) => ({ ...prev, [activeId]: undefined }));
   };
 
   const handleAutoBalance = () => {
+    if (!canEdit) return;
     const orderedTeams = [...teams].sort((a, b) => a.index - b.index);
     const allPlayers: TeamPlayer[] = players.map((p) => ({
       id: p.id,
@@ -102,6 +116,7 @@ export function TeamBuilder({ groupId, sessionId, numTeams, teams, players }: Pr
   };
 
   const handleSave = (publish: boolean) => {
+    if (!canEdit) return;
     startTransition(async () => {
       const containers = buildContainers(assignments, positions, players, teams);
       const payload = teams.flatMap((team) =>
@@ -113,12 +128,21 @@ export function TeamBuilder({ groupId, sessionId, numTeams, teams, players }: Pr
       );
 
       const filtered = payload.filter((p) => p.teamId);
-      await saveTeamsAction(sessionId, groupId, {
+      await saveAction({
         assignments: filtered,
         publish,
       });
       setMessage(publish ? "Teams published" : "Draft saved");
     });
+  };
+
+  const bibsTeamId = teams.find((team) => team.kitType === "BIBS")?.id;
+  const nonBibsTeamId = teams.find((team) => team.kitType === "NON_BIBS")?.id;
+
+  const assignToTeam = (playerId: string, teamId: string) => {
+    if (!canEdit) return;
+    setAssignments((prev) => ({ ...prev, [playerId]: teamId }));
+    setPositions((prev) => ({ ...prev, [playerId]: undefined }));
   };
 
   return (
@@ -129,17 +153,26 @@ export function TeamBuilder({ groupId, sessionId, numTeams, teams, players }: Pr
           <h1 className="text-2xl font-semibold">Manual or auto-balance</h1>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={handleAutoBalance}>
+          <Button variant="secondary" onClick={handleAutoBalance} disabled={!canEdit}>
             Auto-generate
           </Button>
-          <Button disabled={isPending} onClick={() => handleSave(false)}>
+          <Button disabled={isPending || !canEdit} onClick={() => handleSave(false)}>
             Save draft
           </Button>
-          <Button disabled={isPending} variant="default" onClick={() => handleSave(true)}>
+          <Button
+            disabled={isPending || !canEdit}
+            variant="default"
+            onClick={() => handleSave(true)}
+          >
             Publish teams
           </Button>
         </div>
       </div>
+      {!canEdit ? (
+        <div className="text-sm text-muted-foreground">
+          Read-only: only admins or delegated editors can change teams.
+        </div>
+      ) : null}
       {message && <div className="text-sm text-emerald-600">{message}</div>}
 
       <Card>
@@ -155,24 +188,35 @@ export function TeamBuilder({ groupId, sessionId, numTeams, teams, players }: Pr
             onDragEnd={handleDragEnd}
             modifiers={[restrictToFirstScrollableAncestor]}
           >
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-4">
               <DroppableColumn
                 id={BENCH_ID}
                 title="Unassigned"
                 subtitle="Drag to a team"
                 items={itemsByContainer[BENCH_ID] ?? []}
+                onAssign={assignToTeam}
+                bibsTeamId={bibsTeamId}
+                nonBibsTeamId={nonBibsTeamId}
+                canEdit={canEdit}
+                itemsClassName="grid gap-2 sm:grid-cols-2"
               />
-              {teams
-                .sort((a, b) => a.index - b.index)
-                .map((team) => (
-                  <DroppableColumn
-                    key={team.id}
-                    id={team.id}
-                    title={team.label}
-                    subtitle={`Team ${team.index}`}
-                    items={itemsByContainer[team.id] ?? []}
-                  />
-                ))}
+              <div className="grid gap-4 md:grid-cols-2">
+                {teams
+                  .sort((a, b) => a.index - b.index)
+                  .map((team) => (
+                    <DroppableColumn
+                      key={team.id}
+                      id={team.id}
+                      title={team.label}
+                      subtitle={`Team ${team.index}`}
+                      items={itemsByContainer[team.id] ?? []}
+                      onAssign={assignToTeam}
+                      bibsTeamId={bibsTeamId}
+                      nonBibsTeamId={nonBibsTeamId}
+                      canEdit={canEdit}
+                    />
+                  ))}
+              </div>
             </div>
           </DndContext>
         </CardContent>
@@ -210,19 +254,43 @@ function buildContainers(
   return base;
 }
 
+function getContainerId(
+  overId: string,
+  itemsByContainer: Record<string, PlayerInput[]>,
+) {
+  if (overId in itemsByContainer) return overId;
+  for (const [containerId, items] of Object.entries(itemsByContainer)) {
+    if (items.some((item) => item.id === overId)) {
+      return containerId;
+    }
+  }
+  return null;
+}
+
 function DroppableColumn({
   id,
   title,
   subtitle,
   items,
+  onAssign,
+  bibsTeamId,
+  nonBibsTeamId,
+  canEdit,
+  itemsClassName,
 }: {
   id: string;
   title: string;
   subtitle?: string;
   items: PlayerInput[];
+  onAssign: (playerId: string, teamId: string) => void;
+  bibsTeamId?: string;
+  nonBibsTeamId?: string;
+  canEdit: boolean;
+  itemsClassName?: string;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id,
+    disabled: !canEdit,
   });
 
   return (
@@ -240,10 +308,17 @@ function DroppableColumn({
         <Badge variant="secondary">{items.length}</Badge>
       </div>
       <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
-        <div className="space-y-2">
+        <div className={itemsClassName ?? "space-y-2"}>
           {items.map((player) => (
-            <DraggableCard key={player.id} player={player} />
-          ))}
+              <DraggableCard
+                key={player.id}
+                player={player}
+                onAssign={onAssign}
+                bibsTeamId={bibsTeamId}
+                nonBibsTeamId={nonBibsTeamId}
+                canEdit={canEdit}
+              />
+            ))}
           {items.length === 0 && (
             <div className="text-xs text-muted-foreground">Drop players here</div>
           )}
@@ -253,9 +328,22 @@ function DroppableColumn({
   );
 }
 
-function DraggableCard({ player }: { player: PlayerInput }) {
+function DraggableCard({
+  player,
+  onAssign,
+  bibsTeamId,
+  nonBibsTeamId,
+  canEdit,
+}: {
+  player: PlayerInput;
+  onAssign: (playerId: string, teamId: string) => void;
+  bibsTeamId?: string;
+  nonBibsTeamId?: string;
+  canEdit: boolean;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: player.id,
+    disabled: !canEdit,
   });
 
   const style = {
@@ -271,10 +359,34 @@ function DraggableCard({ player }: { player: PlayerInput }) {
         isDragging ? "opacity-70" : ""
       }`}
       {...attributes}
-      {...listeners}
+      {...(canEdit ? listeners : {})}
     >
-      <span>{player.name}</span>
-      <Badge variant="outline">{player.weightedPoints.toFixed(1)}</Badge>
+      <div className="flex items-center gap-2">
+        <span>{player.name}</span>
+        <Badge variant="outline">{player.weightedPoints.toFixed(1)}</Badge>
+      </div>
+      {canEdit ? (
+        <div className="flex items-center gap-1">
+          {bibsTeamId ? (
+            <button
+              type="button"
+              className="rounded-full bg-yellow-300 px-2 py-1 text-[11px] font-semibold text-yellow-900"
+              onClick={() => onAssign(player.id, bibsTeamId)}
+            >
+              Bib
+            </button>
+          ) : null}
+          {nonBibsTeamId ? (
+            <button
+              type="button"
+              className="rounded-full bg-blue-500 px-2 py-1 text-[11px] font-semibold text-white"
+              onClick={() => onAssign(player.id, nonBibsTeamId)}
+            >
+              Non-bib
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

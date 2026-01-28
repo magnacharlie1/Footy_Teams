@@ -1,13 +1,22 @@
+import "server-only";
 import NextAuth from "next-auth";
 import Apple from "next-auth/providers/apple";
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 
 import { prisma } from "@/lib/prisma";
+import { isDevAuthBypassEnabled } from "@/lib/dev-auth";
 
 const applePrivateKey = process.env.APPLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+const devUserId = "dev-user";
+const devUserEmail = "dev@example.com";
 
-export const { auth, handlers, signIn, signOut } = NextAuth({
+function getDevUserId() {
+  const globalValue = (globalThis as { __devAuthUserId?: string }).__devAuthUserId;
+  return globalValue ?? devUserId;
+}
+
+const nextAuth = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "database" },
   pages: {
@@ -35,3 +44,37 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   },
   trustHost: true,
 });
+
+export const { handlers, signIn, signOut } = nextAuth;
+
+export const auth: typeof nextAuth.auth = async (...args) => {
+  if (await isDevAuthBypassEnabled()) {
+    const requestedUserId = getDevUserId();
+    const requestedUser = await prisma.user.findUnique({
+      where: { id: requestedUserId },
+    });
+    const user =
+      requestedUser ??
+      (await prisma.user.upsert({
+        where: { id: devUserId },
+        create: {
+          id: devUserId,
+          name: "Dev User",
+          email: devUserEmail,
+        },
+        update: {
+          name: "Dev User",
+          email: devUserEmail,
+        },
+      }));
+
+    return {
+      user: {
+        id: user.id,
+        name: user.name ?? "Dev User",
+        email: user.email ?? devUserEmail,
+      },
+    } as Awaited<ReturnType<typeof nextAuth.auth>>;
+  }
+  return nextAuth.auth(...args);
+};

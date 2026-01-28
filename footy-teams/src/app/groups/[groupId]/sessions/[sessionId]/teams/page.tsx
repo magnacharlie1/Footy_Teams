@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { TeamBuilder } from "./team-builder";
 import { prisma } from "@/lib/prisma";
 import { aggregateLeagueStats, computeSessionStats } from "@/lib/scoring";
+import { saveTeamsAction } from "./actions";
 
 type Props = {
   params: Promise<{ groupId: string; sessionId: string }>;
@@ -22,6 +23,7 @@ export default async function TeamBuilderPage({ params }: Props) {
   const matchSession = await prisma.matchSession.findUnique({
     where: { id: sessionId },
     include: {
+      teamEditorMember: true,
       participants: { include: { player: true } },
       teams: {
         orderBy: { index: "asc" },
@@ -77,17 +79,25 @@ export default async function TeamBuilderPage({ params }: Props) {
     };
   });
 
+  const canEditTeams =
+    membership.role === "ADMIN" ||
+    membership.canEditTeams ||
+    membership.id === matchSession.teamEditorMemberId;
+
+  const saveAction = saveTeamsAction.bind(null, sessionId, groupId);
+
   return (
     <TeamBuilder
-      groupId={groupId}
-      sessionId={sessionId}
+      canEdit={canEditTeams}
       numTeams={matchSession.numTeams as 2 | 4}
       teams={matchSession.teams.map((t) => ({
         id: t.id,
         label: t.label,
         index: t.index,
+        kitType: t.kitType,
       }))}
       players={players}
+      saveAction={saveAction}
     />
   );
 }

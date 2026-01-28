@@ -12,8 +12,10 @@ const samplePlayers = [
 describe("autoBalanceTeams", () => {
   it("distributes players to minimize weight difference", () => {
     const teams = autoBalanceTeams(samplePlayers, 2);
-    expect(teams[0].players.map((p) => p.id).sort()).toEqual(["a", "d"]);
-    expect(teams[1].players.map((p) => p.id).sort()).toEqual(["b", "c"]);
+    const assignments = teams
+      .map((team) => team.players.map((p) => p.id).sort().join(""))
+      .sort();
+    expect(assignments).toEqual(["ad", "bc"]);
   });
 
   it("handles four teams", () => {

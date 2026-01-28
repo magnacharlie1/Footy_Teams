@@ -1,3 +1,5 @@
+"use server";
+
 import "server-only";
 
 import { redirect } from "next/navigation";
@@ -12,6 +14,14 @@ const sessionSchema = z.object({
   numTeams: z.enum(["2", "4"]),
   paste: z.string().optional(),
 });
+
+function normalizeName(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s'-]/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 function defaultTeams(numTeams: number) {
   const base = [
@@ -65,6 +75,10 @@ export async function createSessionAction(groupId: string, formData: FormData) {
   const sessionDate = new Date(parsed.data.sessionDate);
   const numTeams = Number(parsed.data.numTeams) as 2 | 4;
   const names = parseWhatsAppNames(parsed.data.paste ?? "");
+  const memberUserIds = formData
+    .getAll("memberUserIds")
+    .map((value) => String(value))
+    .filter(Boolean);
 
   const created = await prisma.$transaction(async (tx) => {
     const matchSession = await tx.matchSession.create({
@@ -130,7 +144,38 @@ export async function createSessionAction(groupId: string, formData: FormData) {
       }),
     );
 
-    for (const player of players) {
+    const memberUsers = memberUserIds.length
+      ? await tx.user.findMany({
+          where: { id: { in: memberUserIds } },
+        })
+      : [];
+
+    const memberPlayers = await Promise.all(
+      memberUsers.map(async (user) => {
+        const displayName = user.name ?? user.email ?? "Member";
+        const normalizedName = normalizeName(displayName) || "member";
+        const existing = await tx.groupPlayer.findFirst({
+          where: { groupId, userId: user.id },
+        });
+        if (existing) return existing;
+        return tx.groupPlayer.create({
+          data: {
+            groupId,
+            userId: user.id,
+            displayName,
+            normalizedName,
+            isActive: true,
+          },
+        });
+      }),
+    );
+
+    const uniquePlayers = new Map<string, (typeof players)[number]>();
+    for (const player of [...players, ...memberPlayers]) {
+      uniquePlayers.set(player.id, player);
+    }
+
+    for (const player of uniquePlayers.values()) {
       await tx.sessionParticipant.upsert({
         where: {
           sessionId_groupPlayerId: {

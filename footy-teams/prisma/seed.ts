@@ -13,29 +13,76 @@ async function main() {
       },
     }));
 
-  const group = await prisma.group.upsert({
+  const existingGroup = await prisma.group.findFirst({
     where: { name: "Charlies Monday Football" },
-    update: {},
-    create: {
-      name: "Charlies Monday Football",
-      timezone: "Europe/London",
-      defaultDayOfWeek: 1,
-      defaultStartTimeHHMM: "18:30",
-      defaultDurationMinutes: 60,
-      createdByUserId: admin.id,
-      members: {
-        create: {
-          userId: admin.id,
-          role: "ADMIN",
-        },
-      },
-      invites: {
-        create: {
-          code: "JOIN123",
-        },
-      },
-    },
   });
+
+  const group =
+    existingGroup ??
+    (await prisma.group.create({
+      data: {
+        name: "Charlies Monday Football",
+        timezone: "Europe/London",
+        defaultDayOfWeek: 1,
+        defaultStartTimeHHMM: "18:30",
+        defaultDurationMinutes: 60,
+        createdByUserId: admin.id,
+        members: {
+          create: {
+            userId: admin.id,
+            role: "ADMIN",
+          },
+        },
+        invites: {
+          create: {
+            code: "JOIN123",
+          },
+        },
+      },
+    }));
+
+  const testUsers = [
+    "James Carter",
+    "Olivia Stone",
+    "Mason Wright",
+    "Amelia Brooks",
+    "Ethan Price",
+    "Sofia Grant",
+    "Lucas Bennett",
+    "Chloe Reed",
+    "Noah Walker",
+    "Isla Turner",
+    "Leo Morgan",
+    "Mia Hughes",
+  ];
+
+  const seededUsers = await Promise.all(
+    testUsers.map((name) => {
+      const email = `${name.toLowerCase().replace(/\s+/g, ".")}@example.com`;
+      return prisma.user.upsert({
+        where: { email },
+        update: { name },
+        create: { email, name },
+      });
+    }),
+  );
+
+  for (const user of seededUsers) {
+    await prisma.groupMember.upsert({
+      where: {
+        groupId_userId: {
+          groupId: group.id,
+          userId: user.id,
+        },
+      },
+      update: {},
+      create: {
+        groupId: group.id,
+        userId: user.id,
+        role: "MEMBER",
+      },
+    });
+  }
 
   const playerNames = ["Alice", "Bob", "Cara", "Dan", "Eve", "Frank", "Grace", "Hugo"];
 
@@ -53,6 +100,8 @@ async function main() {
           groupId: group.id,
           displayName: name,
           normalizedName: name.toLowerCase(),
+          nickname: name,
+          nicknameNormalized: name.toLowerCase(),
         },
       }),
     ),
@@ -73,13 +122,21 @@ async function main() {
     },
   });
 
-  await prisma.sessionParticipant.createMany({
-    data: players.map((player) => ({
-      sessionId: matchSession.id,
-      groupPlayerId: player.id,
-    })),
-    skipDuplicates: true,
-  });
+  for (const player of players) {
+    await prisma.sessionParticipant.upsert({
+      where: {
+        sessionId_groupPlayerId: {
+          sessionId: matchSession.id,
+          groupPlayerId: player.id,
+        },
+      },
+      update: {},
+      create: {
+        sessionId: matchSession.id,
+        groupPlayerId: player.id,
+      },
+    });
+  }
 
   const teamA = await prisma.team.create({
     data: {
@@ -129,21 +186,31 @@ async function main() {
     },
   });
 
-  await prisma.playerAlias.createMany({
-    data: [
-      {
-        groupId: group.id,
-        groupPlayerId: players[0].id,
-        aliasNormalized: "alice the great",
+  const aliases = [
+    {
+      groupId: group.id,
+      groupPlayerId: players[0].id,
+      aliasNormalized: "alice the great",
+    },
+    {
+      groupId: group.id,
+      groupPlayerId: players[4].id,
+      aliasNormalized: "evie",
+    },
+  ];
+
+  for (const alias of aliases) {
+    await prisma.playerAlias.upsert({
+      where: {
+        groupId_aliasNormalized: {
+          groupId: alias.groupId,
+          aliasNormalized: alias.aliasNormalized,
+        },
       },
-      {
-        groupId: group.id,
-        groupPlayerId: players[4].id,
-        aliasNormalized: "evie",
-      },
-    ],
-    skipDuplicates: true,
-  });
+      update: {},
+      create: alias,
+    });
+  }
 
   console.log("Seeded group, session, and players. Admin email:", adminEmail);
 }

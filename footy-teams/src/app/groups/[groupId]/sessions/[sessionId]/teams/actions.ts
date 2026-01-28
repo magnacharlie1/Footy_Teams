@@ -1,3 +1,5 @@
+"use server";
+
 import "server-only";
 
 import { revalidatePath } from "next/cache";
@@ -22,8 +24,26 @@ export async function saveTeamsAction(
   const membership = await prisma.groupMember.findFirst({
     where: { groupId, userId: session.user.id, isActive: true },
   });
-  if (!membership || membership.role !== "ADMIN") {
-    throw new Error("Admin access required");
+  if (!membership) {
+    throw new Error("Team editor access required");
+  }
+
+  const matchSession = await prisma.matchSession.findUnique({
+    where: { id: sessionId },
+    select: { teamEditorMemberId: true, groupId: true },
+  });
+
+  if (!matchSession || matchSession.groupId !== groupId) {
+    throw new Error("Session not found");
+  }
+
+  const canEditTeams =
+    membership.role === "ADMIN" ||
+    membership.canEditTeams ||
+    membership.id === matchSession.teamEditorMemberId;
+
+  if (!canEditTeams) {
+    throw new Error("Team editor access required");
   }
 
   await prisma.$transaction(async (tx) => {
@@ -40,6 +60,40 @@ export async function saveTeamsAction(
     }
 
     if (input.publish) {
+      const assignedPlayerIds = Array.from(
+        new Set(input.assignments.map((assignment) => assignment.playerId)),
+      );
+      if (assignedPlayerIds.length) {
+        const groupPlayers = await tx.groupPlayer.findMany({
+          where: { groupId },
+          select: { id: true, jerseyNumber: true },
+        });
+        const usedNumbers = new Set(
+          groupPlayers.map((player) => player.jerseyNumber).filter(Boolean) as number[],
+        );
+        const availableNumbers = Array.from({ length: 99 }, (_, idx) => idx + 1).filter(
+          (num) => !usedNumbers.has(num),
+        );
+        for (let i = availableNumbers.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [availableNumbers[i], availableNumbers[j]] = [
+            availableNumbers[j],
+            availableNumbers[i],
+          ];
+        }
+
+        for (const playerId of assignedPlayerIds) {
+          const player = groupPlayers.find((entry) => entry.id === playerId);
+          if (!player || player.jerseyNumber) continue;
+          const nextNumber = availableNumbers.shift();
+          if (!nextNumber) break;
+          await tx.groupPlayer.update({
+            where: { id: playerId },
+            data: { jerseyNumber: nextNumber },
+          });
+        }
+      }
+
       await tx.matchSession.update({
         where: { id: sessionId },
         data: { status: "PUBLISHED", publishedAt: new Date() },

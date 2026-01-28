@@ -43,7 +43,8 @@ export function pickFormation(teamSize: number) {
 }
 
 export function autoBalanceTeams(players: TeamPlayer[], numTeams: 2 | 4 = 2): BalancedTeam[] {
-  const sorted = [...players].sort((a, b) => b.weightedPoints - a.weightedPoints);
+  const shuffled = [...players].sort(() => Math.random() - 0.5);
+  const sorted = shuffled.sort((a, b) => b.weightedPoints - a.weightedPoints);
   const teams: BalancedTeam[] = Array.from({ length: numTeams }, (_, idx) => ({
     teamIndex: idx + 1,
     totalWeight: 0,
@@ -51,7 +52,23 @@ export function autoBalanceTeams(players: TeamPlayer[], numTeams: 2 | 4 = 2): Ba
   }));
 
   for (const player of sorted) {
-    const target = teams.sort((a, b) => a.totalWeight - b.totalWeight)[0];
+    const target = teams.reduce((best, team) => {
+      if (!best) return team;
+      if (team.totalWeight < best.totalWeight) return team;
+      if (team.totalWeight === best.totalWeight && team.players.length < best.players.length) {
+        return team;
+      }
+      if (
+        team.totalWeight === best.totalWeight &&
+        team.players.length === best.players.length &&
+        Math.random() < 0.5
+      ) {
+        return team;
+      }
+      return best;
+    }, null as BalancedTeam | null);
+
+    if (!target) continue;
     target.players.push(player);
     target.totalWeight += player.weightedPoints;
   }

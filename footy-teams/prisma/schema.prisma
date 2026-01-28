@@ -3,25 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-enum GroupRole {
-  ADMIN
-  MEMBER
-}
-
-enum SessionStatus {
-  DRAFT
-  PUBLISHED
-  COMPLETED
-}
-
-enum KitType {
-  BIBS
-  NON_BIBS
-  OTHER
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_DIRECT_URL")
 }
 
 model User {
@@ -46,12 +30,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -81,7 +65,7 @@ model Group {
   name                   String
   timezone               String   @default("Europe/London")
   defaultDayOfWeek       Int?
-  defaultStartTimeHHMM   String?  @db.VarChar(5)
+  defaultStartTimeHHMM   String?
   defaultDurationMinutes Int?
   isActive               Boolean  @default(true)
   createdAt              DateTime @default(now())
@@ -97,16 +81,18 @@ model Group {
 }
 
 model GroupMember {
-  id       String    @id @default(cuid())
-  groupId  String
-  userId   String
-  role     GroupRole @default(MEMBER)
-  isActive Boolean   @default(true)
-  joinedAt DateTime  @default(now())
-  leftAt   DateTime?
+  id           String    @id @default(cuid())
+  groupId      String
+  userId       String
+  role         String    @default("MEMBER")
+  canEditTeams Boolean   @default(false)
+  isActive     Boolean   @default(true)
+  joinedAt     DateTime  @default(now())
+  leftAt       DateTime?
 
-  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id])
+  group                 Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user                  User           @relation(fields: [userId], references: [id])
+  delegatedTeamSessions MatchSession[] @relation("SessionTeamEditor")
 
   @@unique([groupId, userId])
 }
@@ -127,6 +113,9 @@ model GroupPlayer {
   userId         String?
   displayName    String
   normalizedName String
+  nickname       String?
+  nicknameNormalized String?
+  jerseyNumber   Int?
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -137,9 +126,12 @@ model GroupPlayer {
   aliases      PlayerAlias[]
   participants SessionParticipant[]
   assignments  TeamAssignment[]
+  sessionStats SessionStat[]
   motmVotes    MotmVote[]           @relation("PlayerVotes")
 
   @@unique([groupId, normalizedName])
+  @@unique([groupId, nicknameNormalized])
+  @@unique([groupId, jerseyNumber])
   @@index([userId])
 }
 
@@ -157,24 +149,29 @@ model PlayerAlias {
 }
 
 model MatchSession {
-  id              String        @id @default(cuid())
-  groupId         String
-  sessionDate     DateTime
-  status          SessionStatus @default(DRAFT)
-  numTeams        Int           @default(2)
-  createdByUserId String?
-  publishedAt     DateTime?
-  completedAt     DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                 String    @id @default(cuid())
+  groupId            String
+  sessionDate        DateTime
+  status             String    @default("DRAFT")
+  numTeams           Int       @default(2)
+  createdByUserId    String?
+  teamEditorMemberId String?
+  publishedAt        DateTime?
+  completedAt        DateTime?
+  motmOpen           Boolean   @default(false)
+  motmClosedAt       DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  group          Group                @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  createdBy      User?                @relation("SessionsCreated", fields: [createdByUserId], references: [id])
-  participants   SessionParticipant[]
-  teams          Team[]
-  fixtures       Fixture[]
-  motmVotes      MotmVote[]
-  TeamAssignment TeamAssignment[]
+  group            Group                @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy        User?                @relation("SessionsCreated", fields: [createdByUserId], references: [id])
+  teamEditorMember GroupMember?         @relation("SessionTeamEditor", fields: [teamEditorMemberId], references: [id])
+  participants     SessionParticipant[]
+  teams            Team[]
+  fixtures         Fixture[]
+  sessionStats     SessionStat[]
+  motmVotes        MotmVote[]
+  TeamAssignment   TeamAssignment[]
 
   @@index([groupId])
   @@index([sessionDate])
@@ -198,7 +195,7 @@ model Team {
   sessionId String
   index     Int
   label     String
-  kitType   KitType  @default(OTHER)
+  kitType   String   @default("OTHER")
   createdAt DateTime @default(now())
 
   session         MatchSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -246,17 +243,35 @@ model Fixture {
   @@index([teamBId])
 }
 
+model SessionStat {
+  id            String   @id @default(cuid())
+  sessionId     String
+  groupPlayerId String
+  totalPoints   Int      @default(0)
+  winPoints     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  session MatchSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  player  GroupPlayer  @relation(fields: [groupPlayerId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, groupPlayerId])
+  @@index([groupPlayerId])
+}
+
 model MotmVote {
   id                 String   @id @default(cuid())
   sessionId          String
   voterUserId        String
   votedGroupPlayerId String
+  rank               Int
+  points             Int
   createdAt          DateTime @default(now())
 
   session     MatchSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   voter       User         @relation("UserVotes", fields: [voterUserId], references: [id])
   votedPlayer GroupPlayer  @relation("PlayerVotes", fields: [votedGroupPlayerId], references: [id])
 
-  @@unique([sessionId, voterUserId])
+  @@unique([sessionId, voterUserId, rank])
   @@index([votedGroupPlayerId])
 }
