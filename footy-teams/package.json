@@ -43,7 +43,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@netlify/next": "^1.4.9",
+    "@netlify/plugin-nextjs": "^5.15.7",
     "@types/luxon": "^3.4.2",
     "@types/node": "^20",
     "@types/react": "^19",
