@@ -22,9 +22,10 @@ export default async function SessionPage({ params }: Props) {
   const { groupId, sessionId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
+  const userId = session.user.id;
 
   const membership = await prisma.groupMember.findFirst({
-    where: { groupId, userId: session.user.id, isActive: true },
+    where: { groupId, userId, isActive: true },
   });
   if (!membership) notFound();
 
@@ -66,9 +67,7 @@ export default async function SessionPage({ params }: Props) {
     include: { user: true },
     orderBy: { user: { name: "asc" } },
   });
-  const delegateCandidates = groupMembers.filter(
-    (member) => member.userId !== session.user.id,
-  );
+  const delegateCandidates = groupMembers.filter((member) => member.userId !== userId);
 
   const allPlayers = await prisma.groupPlayer.findMany({
     where: { groupId, isActive: true },

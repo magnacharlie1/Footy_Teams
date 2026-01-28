@@ -193,13 +193,19 @@ export default async function LeaguePage({ params, searchParams }: Props) {
     previousRank.set(stat.playerId, metricValue(stat) === metricValue(prev) ? prevRank : rank);
   });
 
-  const rankedStats = currentStats.map((stat, index) => {
-    if (index === 0) return { ...stat, rank: 1, rankLabel: "1" };
-    const previous = currentStats[index - 1];
+  const rankedStats = currentStats.reduce<
+    Array<LeagueStat & { rank: number; rankLabel: string }>
+  >((acc, stat, index) => {
+    if (index === 0) {
+      acc.push({ ...stat, rank: 1, rankLabel: "1" });
+      return acc;
+    }
+    const previous = acc[index - 1];
     const sameRank = metricValue(stat) === metricValue(previous);
     const rank = sameRank ? previous.rank : index + 1;
-    return { ...stat, rank, rankLabel: sameRank ? "-" : String(rank) };
-  });
+    acc.push({ ...stat, rank, rankLabel: sameRank ? "-" : String(rank) });
+    return acc;
+  }, []);
 
   const players = await prisma.groupPlayer.findMany({
     where: { groupId },

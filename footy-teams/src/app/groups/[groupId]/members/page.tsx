@@ -29,9 +29,10 @@ export default async function MembersPage({ params, searchParams }: Props) {
   const { error } = resolvedSearchParams;
   const session = await auth();
   if (!session?.user) redirect("/login");
+  const userId = session.user.id;
 
   const membership = await prisma.groupMember.findFirst({
-    where: { groupId, userId: session.user.id, isActive: true },
+    where: { groupId, userId, isActive: true },
   });
   if (!membership) notFound();
   const isAdmin = membership.role === "ADMIN";
@@ -161,7 +162,7 @@ export default async function MembersPage({ params, searchParams }: Props) {
                 </div>
               </div>
               <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
-                {isAdmin || member.userId === session.user.id ? (
+                {isAdmin || member.userId === userId ? (
                   <form
                     action={updateMemberNumber.bind(null, groupId, member.id)}
                     className="flex items-center gap-2"

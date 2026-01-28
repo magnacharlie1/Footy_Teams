@@ -27,7 +27,7 @@ export function InviteQrCard({ code }: Props) {
         light: "#FFFFFF",
       },
     })
-      .then((markup) => {
+      .then((markup: string) => {
         if (isActive) setSvg(markup);
       })
       .catch(() => {

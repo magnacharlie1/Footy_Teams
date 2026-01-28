@@ -88,7 +88,6 @@ export function LeagueMetricChart({ data, yLabel }: Props) {
         strokeWidth: 1.6,
         curve: "monotone-x",
         className: `player-line player-${player.id}`,
-        class: `player-line player-${player.id}`,
       }),
     );
 
@@ -101,7 +100,6 @@ export function LeagueMetricChart({ data, yLabel }: Props) {
         strokeWidth: 18,
         curve: "monotone-x",
         className: `player-hit player-${player.id}`,
-        class: `player-hit player-${player.id}`,
         pointerEvents: "stroke",
       }),
     );
@@ -109,7 +107,7 @@ export function LeagueMetricChart({ data, yLabel }: Props) {
     const plot = Plot.plot({
       style: {
         fontFamily: "var(--font-sans)",
-        fontSize: 12,
+        fontSize: "12px",
       },
       height: 320,
       marginTop: 16,

@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-type PlayerInput = TeamPlayer & { teamId: string | null };
+type PlayerInput = TeamPlayer & { teamId: string | null; positionSlot?: number };
 
 type TeamInfo = { id: string; label: string; index: number; kitType: string };
 

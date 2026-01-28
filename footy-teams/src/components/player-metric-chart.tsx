@@ -39,7 +39,7 @@ export function PlayerMetricChart({ data, yLabel }: Props) {
     const plot = Plot.plot({
       style: {
         fontFamily: "var(--font-sans)",
-        fontSize: 12,
+        fontSize: "12px",
       },
       height: 280,
       marginTop: 22,
