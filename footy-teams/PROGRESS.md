@@ -36,6 +36,7 @@
 - Session: add nickname toggle in Teams view and export teams image (phone ratio) for sharing.
 - Export: inline kit colours + number colours in the exported image so shirts render correctly.
 - Export: set explicit SVG fill colors to avoid black shirts in saved images.
+- Auth0 migration plan saved in AUTH0_PLAN.md (switch from Google/Apple to Auth0 hub).
 
 ## Notes / Next steps
 
