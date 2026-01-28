@@ -116,8 +116,20 @@ export default async function LeaguePage({ params, searchParams }: Props) {
   };
 
   type LeagueStat = ReturnType<typeof aggregateLeagueStats>[number] & { motmPoints: number };
-  const metricValue = (stat: LeagueStat) =>
-    selectedMetric === "motmPoints" ? stat.motmPoints : stat[selectedMetric];
+  const metricValue = (stat: LeagueStat) => {
+    switch (selectedMetric) {
+      case "motmPoints":
+        return stat.motmPoints;
+      case "totalPoints":
+        return stat.totalPoints;
+      case "weightedPoints":
+        return stat.weightedPoints;
+      case "totalWinPoints":
+        return stat.totalWinPoints;
+      case "weightedWinPoints":
+        return stat.weightedWinPoints;
+    }
+  };
   const byMetricDesc = (
     a: LeagueStat,
     b: LeagueStat,
