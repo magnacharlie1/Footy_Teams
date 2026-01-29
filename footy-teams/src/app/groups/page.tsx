@@ -10,6 +10,8 @@ import { joinGroupByCodeAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
+const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
 type Props = {
   searchParams?: { joinError?: string };
 };
@@ -55,7 +57,12 @@ export default async function GroupsPage({ searchParams }: Props) {
             </CardHeader>
             <CardContent className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                {group.timezone} · Default day {group.defaultDayOfWeek ?? "n/a"}
+                {group.timezone} ·{" "}
+                {group.defaultDayOfWeek === null || group.defaultDayOfWeek === undefined
+                  ? "Default day n/a"
+                  : `Default ${dayNames[group.defaultDayOfWeek] ?? "day"}`}
+                {group.defaultStartTimeHHMM ? ` at ${group.defaultStartTimeHHMM}` : ""}
+                {group.defaultDurationMinutes ? ` · ${group.defaultDurationMinutes} mins` : ""}
               </div>
               <Button variant="secondary" size="sm" asChild>
                 <Link href={`/groups/${group.id}`}>Open</Link>
