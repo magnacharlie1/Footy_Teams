@@ -8,6 +8,49 @@ import { auth } from "@/auth";
 import { randomBytes } from "crypto";
 import { normalizePlayerName } from "@/lib/player-name";
 
+export async function updateMemberRole(
+  groupId: string,
+  memberId: string,
+  formData: FormData,
+) {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+
+  const membership = await prisma.groupMember.findFirst({
+    where: { groupId, userId: session.user.id, isActive: true },
+  });
+  if (!membership || membership.role !== "ADMIN") {
+    redirect(`/groups/${groupId}/members?error=unauthorized`);
+  }
+
+  const raw = formData.get("role");
+  const role = raw === "ADMIN" ? "ADMIN" : "MEMBER";
+
+  const target = await prisma.groupMember.findFirst({
+    where: { id: memberId, groupId, isActive: true },
+    select: { id: true, role: true },
+  });
+  if (!target) {
+    redirect(`/groups/${groupId}/members?error=invalid-member`);
+  }
+
+  if (target.role === "ADMIN" && role !== "ADMIN") {
+    const adminCount = await prisma.groupMember.count({
+      where: { groupId, isActive: true, role: "ADMIN" },
+    });
+    if (adminCount <= 1) {
+      redirect(`/groups/${groupId}/members?error=last-admin`);
+    }
+  }
+
+  await prisma.groupMember.update({
+    where: { id: memberId },
+    data: { role },
+  });
+
+  redirect(`/groups/${groupId}/members`);
+}
+
 export async function updateMemberNumber(
   groupId: string,
   memberId: string,

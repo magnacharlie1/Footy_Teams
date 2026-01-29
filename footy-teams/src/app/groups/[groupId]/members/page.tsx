@@ -14,6 +14,7 @@ import {
   createGroupInvite,
   deactivateGroupInvite,
   rotateGroupInvite,
+  updateMemberRole,
   updateMemberNumber,
   updateMemberTeamEditor,
 } from "./actions";
@@ -75,6 +76,8 @@ export default async function MembersPage({ params, searchParams }: Props) {
         ? `Shirt number must be between 1 and ${maxNumber}.`
         : error === "invalid-member"
           ? "Could not find that member."
+          : error === "last-admin"
+            ? "At least one admin must remain in the group."
           : error === "unauthorized"
             ? "You do not have access to edit numbers."
             : null;
@@ -186,19 +189,36 @@ export default async function MembersPage({ params, searchParams }: Props) {
                   </div>
                 )}
                 {isAdmin ? (
-                  <form
-                    action={updateMemberTeamEditor.bind(null, groupId, member.id)}
-                    className="flex items-center gap-2"
-                  >
-                    <input
-                      type="hidden"
-                      name="canEditTeams"
-                      value={member.canEditTeams ? "false" : "true"}
-                    />
-                    <Button type="submit" size="sm" variant="outline">
-                      {member.canEditTeams ? "Remove team editor" : "Make team editor"}
-                    </Button>
-                  </form>
+                  <>
+                    <form
+                      action={updateMemberTeamEditor.bind(null, groupId, member.id)}
+                      className="flex items-center gap-2"
+                    >
+                      <input
+                        type="hidden"
+                        name="canEditTeams"
+                        value={member.canEditTeams ? "false" : "true"}
+                      />
+                      <Button type="submit" size="sm" variant="outline">
+                        {member.canEditTeams ? "Remove team editor" : "Make team editor"}
+                      </Button>
+                    </form>
+                    {member.userId !== userId ? (
+                      <form
+                        action={updateMemberRole.bind(null, groupId, member.id)}
+                        className="flex items-center gap-2"
+                      >
+                        <input
+                          type="hidden"
+                          name="role"
+                          value={member.role === "ADMIN" ? "MEMBER" : "ADMIN"}
+                        />
+                        <Button type="submit" size="sm" variant="outline">
+                          {member.role === "ADMIN" ? "Remove admin" : "Make admin"}
+                        </Button>
+                      </form>
+                    ) : null}
+                  </>
                 ) : null}
               </div>
             </div>
