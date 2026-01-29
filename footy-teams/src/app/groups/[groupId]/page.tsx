@@ -7,6 +7,8 @@ import { PopupCard } from "@/components/popup-card";
 import { prisma } from "@/lib/prisma";
 import { DeleteSessionIconButton } from "@/components/delete-session-icon-button";
 import { deleteSessionAction } from "./sessions/[sessionId]/actions";
+import { Textarea } from "@/components/ui/textarea";
+import { updateGroupAnnouncement } from "./actions";
 
 type Props = {
   params: Promise<{ groupId: string }>;
@@ -46,6 +48,7 @@ export default async function GroupDashboard({ params, searchParams }: Props) {
     joined === "1" || joined === "true"
       ? `Your shirt number is ${player?.jerseyNumber ?? "TBD"}.`
       : null;
+  const announcement = group.announcement?.trim() || "";
 
   return (
     <div className="container py-8 space-y-6">
@@ -80,10 +83,20 @@ export default async function GroupDashboard({ params, searchParams }: Props) {
               >
                 <div>
                   <div className="font-semibold">
-                    {new Date(session.sessionDate).toLocaleDateString("en-GB")}
+                    {new Date(session.sessionDate).toLocaleDateString("en-GB", {
+                      timeZone: group.timezone,
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {session.numTeams} teams · {session.status}
+                    {new Date(session.sessionDate).toLocaleTimeString("en-GB", {
+                      timeZone: group.timezone,
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    · {session.numTeams} teams · {session.status}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -104,6 +117,11 @@ export default async function GroupDashboard({ params, searchParams }: Props) {
             {group.sessions.length === 0 && (
               <div className="text-sm text-muted-foreground">No sessions yet.</div>
             )}
+            {group.sessions.length > 0 ? (
+              <div className="text-xs text-muted-foreground">
+                Times shown in {group.timezone}.
+              </div>
+            ) : null}
           </CardContent>
         </Card>
         <Card>
@@ -120,6 +138,35 @@ export default async function GroupDashboard({ params, searchParams }: Props) {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Group updates</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          {announcement ? (
+            <div className="whitespace-pre-line rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">
+              {announcement}
+            </div>
+          ) : (
+            <div>No updates yet.</div>
+          )}
+          {canEdit ? (
+            <form action={updateGroupAnnouncement.bind(null, group.id)} className="space-y-2">
+              <Textarea
+                name="announcement"
+                placeholder="Add an update for the group (kit changes, pitch info, last-minute notes)."
+                defaultValue={announcement}
+              />
+              <div className="flex justify-end">
+                <Button type="submit" size="sm">
+                  Save update
+                </Button>
+              </div>
+            </form>
+          ) : null}
+        </CardContent>
+      </Card>
     </div>
   );
 }
