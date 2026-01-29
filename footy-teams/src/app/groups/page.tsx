@@ -70,14 +70,9 @@ export default async function GroupsPage({ searchParams }: Props) {
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-muted-foreground">
               <p>Create your first group or join with an invite code.</p>
-              <div className="flex gap-3">
-                <Button asChild>
-                  <Link href="/groups/new">Create group</Link>
-                </Button>
-                <Button variant="secondary" asChild>
-                  <Link href="/join/demo">Try demo</Link>
-                </Button>
-              </div>
+              <Button asChild>
+                <Link href="/groups/new">Create group</Link>
+              </Button>
             </CardContent>
           </Card>
         ) : null}
