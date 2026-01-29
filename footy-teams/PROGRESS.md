@@ -37,6 +37,12 @@
 - Export: inline kit colours + number colours in the exported image so shirts render correctly.
 - Export: set explicit SVG fill colors to avoid black shirts in saved images.
 - Auth0 migration plan saved in AUTH0_PLAN.md (switch from Google/Apple to Auth0 hub).
+- Auth0: switched NextAuth provider to Auth0; simplified login UI/copy; updated .env.example.
+- Landing: homepage buttons now link to /login and roadmap; added roadmap section.
+- Members: added admin role management UI + server action with last-admin guard.
+- Groups: removed “Try demo” button from empty state.
+- Groups: show session date + time (timezone-aware) and add “Group updates” admin note box with DB-backed announcement field + migration.
+- Groups list: show human-readable default day name, start time, and duration instead of numeric day.
 
 ## Notes / Next steps
 
