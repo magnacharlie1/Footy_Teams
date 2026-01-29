@@ -1,13 +1,11 @@
 import "server-only";
 import NextAuth, { type Session, type User } from "next-auth";
-import Apple from "next-auth/providers/apple";
-import Google from "next-auth/providers/google";
+import Auth0 from "next-auth/providers/auth0";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 
 import { prisma } from "@/lib/prisma";
 import { isDevAuthBypassEnabled } from "@/lib/dev-auth";
 
-const applePrivateKey = process.env.APPLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 const devUserId = "dev-user";
 const devUserEmail = "dev@example.com";
 
@@ -16,19 +14,6 @@ function getDevUserId() {
   return globalValue ?? devUserId;
 }
 
-const appleProvider =
-  process.env.APPLE_CLIENT_ID &&
-  process.env.APPLE_TEAM_ID &&
-  process.env.APPLE_KEY_ID &&
-  applePrivateKey
-    ? Apple({
-        clientId: process.env.APPLE_CLIENT_ID,
-        teamId: process.env.APPLE_TEAM_ID,
-        keyId: process.env.APPLE_KEY_ID,
-        privateKey: applePrivateKey,
-      } as Parameters<typeof Apple>[0])
-    : null;
-
 const nextAuth = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "database" },
@@ -36,11 +21,11 @@ const nextAuth = NextAuth({
     signIn: "/login",
   },
   providers: [
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    Auth0({
+      clientId: process.env.AUTH0_CLIENT_ID!,
+      clientSecret: process.env.AUTH0_CLIENT_SECRET!,
+      issuer: process.env.AUTH0_ISSUER,
     }),
-    ...(appleProvider ? [appleProvider] : []),
   ],
   callbacks: {
     session: async ({ session, user }: { session: Session; user: User }) => {

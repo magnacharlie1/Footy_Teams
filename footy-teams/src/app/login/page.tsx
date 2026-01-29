@@ -25,12 +25,6 @@ export default function LoginPage({ searchParams }: Props) {
   const devAuthEnabled =
     process.env.DEV_AUTH_BYPASS === "true" &&
     process.env.NODE_ENV !== "production";
-  const appleEnabled = Boolean(
-    process.env.APPLE_CLIENT_ID &&
-      process.env.APPLE_TEAM_ID &&
-      process.env.APPLE_KEY_ID &&
-      process.env.APPLE_PRIVATE_KEY,
-  );
 
   return (
     <div className="container flex min-h-[70vh] flex-col items-center justify-center gap-6 py-10">
@@ -38,11 +32,11 @@ export default function LoginPage({ searchParams }: Props) {
         <p className="text-sm font-semibold text-primary">Welcome back</p>
         <h1 className="text-3xl font-semibold">Sign in to Footy Teams</h1>
         <p className="text-muted-foreground">
-          Use Google{appleEnabled ? " or Apple" : ""} to manage your groups and weekly sessions.
+          Sign in to manage your groups and weekly sessions.
         </p>
       </div>
       <Suspense fallback={<div>Loading...</div>}>
-        <LoginActions callbackUrl={callbackUrl} showApple={appleEnabled} />
+        <LoginActions callbackUrl={callbackUrl} />
       </Suspense>
       {devAuthEnabled ? (
         <div className="flex flex-col gap-2">
