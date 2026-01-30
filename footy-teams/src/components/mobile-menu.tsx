@@ -42,52 +42,51 @@ export function MobileMenu({ isAuthed }: Props) {
             open ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-semibold text-muted-foreground">Menu</div>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border"
-                aria-label="Close menu"
-              >
-                <X className="h-4 w-4" aria-hidden="true" />
-              </button>
-            </div>
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-semibold text-muted-foreground">Menu</div>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border"
+              aria-label="Close menu"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
 
-            <div className="flex flex-col gap-2">
-              <Button asChild variant="secondary" className="justify-start">
-                <Link href="/" onClick={() => setOpen(false)}>
-                  <Home className="mr-2 h-4 w-4" aria-hidden="true" />
-                  Home
-                </Link>
-              </Button>
+          <div className="flex flex-col gap-2">
+            <Button asChild variant="secondary" className="justify-start">
+              <Link href="/" onClick={() => setOpen(false)}>
+                <Home className="mr-2 h-4 w-4" aria-hidden="true" />
+                Home
+              </Link>
+            </Button>
 
-              {isAuthed ? (
-                <>
-                  <Button asChild variant="outline" className="justify-start">
-                    <Link href="/groups" onClick={() => setOpen(false)}>
-                      <Users className="mr-2 h-4 w-4" aria-hidden="true" />
-                      Groups
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline" className="justify-start">
-                    <Link href="/profile" onClick={() => setOpen(false)}>
-                      <User className="mr-2 h-4 w-4" aria-hidden="true" />
-                      Profile
-                    </Link>
-                  </Button>
-                  <div className="pt-2">
-                    <SignOutButton />
-                  </div>
-                </>
-              ) : (
-                <Button asChild className="justify-start">
-                  <Link href="/login" onClick={() => setOpen(false)}>
-                    Sign in
+            {isAuthed ? (
+              <>
+                <Button asChild variant="outline" className="justify-start">
+                  <Link href="/groups" onClick={() => setOpen(false)}>
+                    <Users className="mr-2 h-4 w-4" aria-hidden="true" />
+                    Groups
                   </Link>
                 </Button>
-              )}
-            </div>
+                <Button asChild variant="outline" className="justify-start">
+                  <Link href="/profile" onClick={() => setOpen(false)}>
+                    <User className="mr-2 h-4 w-4" aria-hidden="true" />
+                    Profile
+                  </Link>
+                </Button>
+                <div className="pt-2">
+                  <SignOutButton />
+                </div>
+              </>
+            ) : (
+              <Button asChild className="justify-start">
+                <Link href="/login" onClick={() => setOpen(false)}>
+                  Sign in
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
       </div>
