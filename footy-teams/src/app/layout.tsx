@@ -45,7 +45,7 @@ export default async function RootLayout({
       >
         <Providers>
           <div className="flex min-h-screen flex-col">
-            <header className="border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+            <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:relative">
               <div className="container flex flex-col gap-2 py-3 sm:h-14 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="sm:hidden">
