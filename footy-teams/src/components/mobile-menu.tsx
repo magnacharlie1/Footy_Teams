@@ -38,7 +38,7 @@ export function MobileMenu({ isAuthed }: Props) {
           aria-hidden="true"
         />
         <div
-          className={`absolute left-0 top-0 flex h-full w-72 flex-col gap-4 border-r border-border bg-card p-4 shadow-2xl transition-transform duration-200 ease-out ${
+          className={`absolute left-0 top-0 flex h-full w-72 flex-col gap-4 border-r border-border bg-white p-4 shadow-2xl transition-transform duration-200 ease-out dark:bg-slate-950 ${
             open ? "translate-x-0" : "-translate-x-full"
           }`}
         >
