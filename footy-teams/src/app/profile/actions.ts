@@ -18,7 +18,7 @@ const nameSchema = z
 
 export type UpdateNameState = {
   message?: string;
-  fieldErrors?: Record<string, string[]>;
+  fieldErrors?: { name?: string[] };
   values?: Record<string, string>;
 };
 
@@ -34,9 +34,10 @@ export async function updateProfileNameAction(
   const raw = String(formData.get("name") ?? "");
   const parsed = nameSchema.safeParse(raw);
   if (!parsed.success) {
+    const fieldErrors = parsed.error.flatten().fieldErrors;
     return {
       message: "Please fix the highlighted field.",
-      fieldErrors: parsed.error.flatten().fieldErrors,
+      fieldErrors: { name: fieldErrors.name },
       values: { name: raw },
     };
   }
