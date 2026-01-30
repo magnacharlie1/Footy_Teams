@@ -34,10 +34,10 @@ export async function updateProfileNameAction(
   const raw = String(formData.get("name") ?? "");
   const parsed = nameSchema.safeParse(raw);
   if (!parsed.success) {
-    const fieldErrors = parsed.error.flatten().fieldErrors;
+    const formErrors = parsed.error.flatten().formErrors;
     return {
       message: "Please fix the highlighted field.",
-      fieldErrors: { name: fieldErrors.name },
+      fieldErrors: { name: formErrors.length ? formErrors : undefined },
       values: { name: raw },
     };
   }
