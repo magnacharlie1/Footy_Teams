@@ -69,7 +69,7 @@ export default async function InvitePage({ params }: Props) {
     : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 dark:bg-slate-950/60">
       <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle>{existingMembership ? "You're already in" : "Join this group?"}</CardTitle>

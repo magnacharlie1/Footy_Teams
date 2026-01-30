@@ -12,7 +12,7 @@ export function BackButton() {
       type="button"
       variant="outline"
       size="icon"
-      className="h-9 w-9 rounded-full bg-white/90 shadow-sm hover:bg-white"
+      className="h-9 w-9 rounded-full bg-background/90 shadow-sm hover:bg-background"
       onClick={() => router.back()}
     >
       <span aria-hidden="true">&lt;</span>

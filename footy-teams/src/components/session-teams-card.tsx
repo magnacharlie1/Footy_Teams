@@ -134,17 +134,17 @@ function getKitColorClass(kitType: string) {
   if (kitType === "NON_BIBS") {
     return "text-blue-500";
   }
-  return "text-slate-200";
+  return "text-slate-200 dark:text-slate-400";
 }
 
 function getKitTextClass(kitType: string) {
   if (kitType === "BIBS") {
-    return "text-black";
+    return "text-slate-900";
   }
   if (kitType === "NON_BIBS") {
-    return "text-black";
+    return "text-slate-900";
   }
-  return "text-black";
+  return "text-slate-900";
 }
 
 function buildTeamNumbers(
@@ -224,7 +224,7 @@ function TeamsGrid({
             {team.assignments.length === 0 ? (
               <div className="mt-2 text-sm text-muted-foreground">No players yet</div>
             ) : (
-              <div className="mt-3 space-y-3 rounded-lg bg-emerald-50/60 p-3">
+              <div className="mt-3 space-y-3 rounded-lg bg-emerald-50/60 p-3 dark:bg-emerald-950/40">
                 {(() => {
                   const rand = createRandom(hashString(`${sessionId}-${team.id}`));
                   const options = getFormationOptions(team.assignments.length);
@@ -281,7 +281,7 @@ function TeamsGrid({
                                     {shirtNumber}
                                   </div>
                                 </div>
-                                <div className="flex flex-col items-center text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700">
+                                <div className="flex flex-col items-center text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-200">
                                   <span>{shirtName.first}</span>
                                   {shirtName.last ? <span>{shirtName.last}</span> : null}
                                 </div>

@@ -14,8 +14,8 @@ export function CompleteProfileBanner({ show }: Props) {
   if (!show || pathname === "/profile") return null;
 
   return (
-    <div className="border-b border-amber-200 bg-amber-50">
-      <div className="container flex flex-col gap-3 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+    <div className="border-b border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/40">
+      <div className="container flex flex-col gap-3 py-3 text-sm text-amber-900 dark:text-amber-100 sm:flex-row sm:items-center sm:justify-between">
         <div>
           Add your name so teammates can recognize you. Your email is never shown.
         </div>

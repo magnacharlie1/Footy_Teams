@@ -16,7 +16,7 @@ export function PopupCard({ title, message, actionLabel = "Okay" }: Props) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 dark:bg-slate-950/60">
       <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle>{title}</CardTitle>

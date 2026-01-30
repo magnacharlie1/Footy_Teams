@@ -45,7 +45,7 @@ export default async function RootLayout({
       >
         <Providers>
           <div className="flex min-h-screen flex-col">
-            <header className="border-b border-border bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70">
+            <header className="border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
               <div className="container flex flex-col gap-2 py-3 sm:h-14 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="sm:hidden">
@@ -55,7 +55,7 @@ export default async function RootLayout({
                     href="/"
                     className={cn(
                       buttonVariants({ variant: "outline", size: "icon" }),
-                      "hidden h-9 w-9 rounded-full bg-white/90 shadow-sm hover:bg-white sm:inline-flex",
+                      "hidden h-9 w-9 rounded-full bg-background/90 shadow-sm hover:bg-background sm:inline-flex",
                     )}
                   >
                     <Home className="h-4 w-4" aria-hidden="true" />
@@ -71,7 +71,7 @@ export default async function RootLayout({
                         href="/profile"
                         className={cn(
                           buttonVariants({ variant: "outline", size: "icon" }),
-                          "h-9 w-9 rounded-full bg-white/90 shadow-sm hover:bg-white",
+                          "h-9 w-9 rounded-full bg-background/90 shadow-sm hover:bg-background",
                         )}
                         aria-label="Profile"
                       >

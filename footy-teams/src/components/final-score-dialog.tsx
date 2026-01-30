@@ -42,7 +42,7 @@ export function FinalScoreDialog({ fixture, action }: Props) {
       </Button>
       {confirmChange ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-lg border border-border bg-white p-6 shadow-lg">
+          <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg">
             <div className="space-y-1">
               <h2 className="text-lg font-semibold">Change final score?</h2>
               <p className="text-sm text-muted-foreground">
@@ -72,7 +72,7 @@ export function FinalScoreDialog({ fixture, action }: Props) {
       ) : null}
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-lg border border-border bg-white p-6 shadow-lg">
+          <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg">
             <div className="space-y-1">
               <h2 className="text-lg font-semibold">Final Score</h2>
               <p className="text-sm text-muted-foreground">

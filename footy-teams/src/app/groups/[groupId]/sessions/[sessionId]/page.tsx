@@ -160,7 +160,7 @@ export default async function SessionPage({ params }: Props) {
         <details className="group rounded-lg border border-border">
           <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-semibold">
             <span>Edit participants</span>
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-white text-base">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-base">
               ✎
             </span>
           </summary>

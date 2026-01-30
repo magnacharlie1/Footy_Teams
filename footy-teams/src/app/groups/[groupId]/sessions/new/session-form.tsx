@@ -103,7 +103,7 @@ export function SessionForm({ action, members }: Props) {
             return (
               <label
                 key={member.id}
-                className="flex items-center gap-2 rounded-md border border-border bg-white px-3 py-2 text-sm"
+                className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm"
               >
                 <input
                   type="checkbox"
@@ -161,7 +161,7 @@ export function SessionForm({ action, members }: Props) {
             {players.map((name, index) => (
               <li
                 key={`${name}-${index}`}
-                className="flex items-center justify-between rounded-md border border-border bg-white px-3 py-2 text-sm"
+                className="flex items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm"
               >
                 <span>{name}</span>
                 <button

@@ -19,20 +19,29 @@ export function MobileMenu({ isAuthed }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-white/90 shadow-sm transition hover:bg-white"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/90 shadow-sm transition hover:bg-background"
         aria-label="Open menu"
       >
         <Menu className="h-4 w-4" aria-hidden="true" />
       </button>
 
-      {open ? (
-        <div className="fixed inset-0 z-50">
-          <div
-            className="absolute inset-0 bg-slate-900/40"
-            onClick={() => setOpen(false)}
-            aria-hidden="true"
-          />
-          <div className="absolute left-0 top-0 flex h-full w-72 flex-col gap-4 bg-white p-4 shadow-xl">
+      <div
+        className={`fixed inset-0 z-50 transition ${
+          open ? "pointer-events-auto" : "pointer-events-none"
+        }`}
+      >
+        <div
+          className={`absolute inset-0 bg-slate-900/40 transition-opacity dark:bg-slate-950/60 ${
+            open ? "opacity-100" : "opacity-0"
+          }`}
+          onClick={() => setOpen(false)}
+          aria-hidden="true"
+        />
+        <div
+          className={`absolute left-0 top-0 flex h-full w-72 flex-col gap-4 bg-background p-4 shadow-xl transition-transform duration-200 ease-out ${
+            open ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
             <div className="flex items-center justify-between">
               <div className="text-sm font-semibold text-muted-foreground">Menu</div>
               <button
@@ -81,7 +90,7 @@ export function MobileMenu({ isAuthed }: Props) {
             </div>
           </div>
         </div>
-      ) : null}
+      </div>
     </>
   );
 }

@@ -40,7 +40,7 @@ export function InviteQrCard({ code }: Props) {
   }, [link]);
 
   return (
-    <div className="flex items-center justify-center rounded-lg border border-border bg-white p-4">
+    <div className="flex items-center justify-center rounded-lg border border-border bg-card p-4">
       <div
         className="h-[180px] w-[180px]"
         dangerouslySetInnerHTML={{ __html: svg }}

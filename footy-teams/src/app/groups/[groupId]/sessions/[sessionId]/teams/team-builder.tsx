@@ -365,7 +365,7 @@ function DraggableCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col gap-2 rounded-md border border-border bg-white px-3 py-2 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between ${
+      className={`flex flex-col gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between ${
         isDragging ? "opacity-70" : ""
       }`}
       {...attributes}
