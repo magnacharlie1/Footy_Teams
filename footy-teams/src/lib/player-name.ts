@@ -5,3 +5,9 @@ export function normalizePlayerName(name: string) {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+export function safeDisplayName(name?: string | null) {
+  const trimmed = name?.trim() || "";
+  if (!trimmed) return "Member";
+  return trimmed.includes("@") ? "Member" : trimmed;
+}

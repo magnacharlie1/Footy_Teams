@@ -7,6 +7,7 @@ import { LeagueMetricChart } from "@/components/league-metric-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
 import { aggregateLeagueStats } from "@/lib/scoring";
+import { safeDisplayName } from "@/lib/player-name";
 
 type Props = {
   params: Promise<{ groupId: string }>;
@@ -211,7 +212,9 @@ export default async function LeaguePage({ params, searchParams }: Props) {
     where: { groupId },
     select: { id: true, displayName: true },
   });
-  const playerLookup = new Map(players.map((p) => [p.id, p.displayName]));
+  const playerLookup = new Map(
+    players.map((p) => [p.id, safeDisplayName(p.displayName)]),
+  );
 
   const statsByPlayer = new Map<string, typeof sessionStats>();
   for (const stat of sessionStats) {

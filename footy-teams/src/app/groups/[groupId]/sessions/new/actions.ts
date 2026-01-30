@@ -8,6 +8,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { parseWhatsAppNames } from "@/lib/whatsapp";
 import { prisma } from "@/lib/prisma";
+import { safeDisplayName } from "@/lib/player-name";
 
 const sessionSchema = z.object({
   sessionDate: z.string(),
@@ -152,7 +153,7 @@ export async function createSessionAction(groupId: string, formData: FormData) {
 
     const memberPlayers = await Promise.all(
       memberUsers.map(async (user) => {
-        const displayName = user.name ?? user.email ?? "Member";
+        const displayName = safeDisplayName(user.name);
         const normalizedName = normalizeName(displayName) || "member";
         const existing = await tx.groupPlayer.findFirst({
           where: { groupId, userId: user.id },

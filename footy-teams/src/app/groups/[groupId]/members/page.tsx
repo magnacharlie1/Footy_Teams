@@ -10,6 +10,7 @@ import { InviteQrCard } from "@/components/invite-qr-card";
 import { PopupCard } from "@/components/popup-card";
 import { getJerseyNumberMax } from "@/lib/group-player";
 import { prisma } from "@/lib/prisma";
+import { safeDisplayName } from "@/lib/player-name";
 import {
   createGroupInvite,
   deactivateGroupInvite,
@@ -152,11 +153,8 @@ export default async function MembersPage({ params, searchParams }: Props) {
             >
               <div>
                 <div className="font-semibold">
-                  {member.user?.name ?? member.user?.email ?? "Unnamed user"}
+                  {safeDisplayName(member.user?.name)}
                 </div>
-                {member.user?.email ? (
-                  <div className="text-xs text-muted-foreground">{member.user.email}</div>
-                ) : null}
                 <div className="mt-1 flex flex-wrap gap-2 text-xs">
                   {member.role === "ADMIN" ? <Badge>Admin</Badge> : null}
                   {member.canEditTeams && member.role !== "ADMIN" ? (

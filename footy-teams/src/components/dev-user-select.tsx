@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { safeDisplayName } from "@/lib/player-name";
 
 type UserOption = {
   id: string;
@@ -55,7 +56,7 @@ export function DevUserSelect({ users, currentUserId }: Props) {
         >
           {users.map((user) => (
             <option key={user.id} value={user.id}>
-              {user.name ?? user.email ?? user.id}
+              {user.name ? safeDisplayName(user.name) : user.id}
             </option>
           ))}
         </select>

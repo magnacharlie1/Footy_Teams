@@ -8,10 +8,12 @@ import { buttonVariants } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { fontSans } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
+import { safeDisplayName } from "@/lib/player-name";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Home } from "lucide-react";
 import { isDevAuthBypassEnabled } from "@/lib/dev-auth";
+import { CompleteProfileBanner } from "@/components/complete-profile-banner";
 
 export const metadata: Metadata = {
   title: "Footy Teams",
@@ -68,7 +70,7 @@ export default async function RootLayout({
                         />
                       ) : null}
                       <span className="hidden text-muted-foreground sm:inline">
-                        {session.user.name ?? session.user.email}
+                        {safeDisplayName(session.user.name)}
                       </span>
                       <SignOutButton />
                     </>
@@ -80,6 +82,7 @@ export default async function RootLayout({
                 </nav>
               </div>
             </header>
+            <CompleteProfileBanner show={Boolean(session?.user && !session.user.name)} />
             <main className="flex-1">{children}</main>
           </div>
         </Providers>

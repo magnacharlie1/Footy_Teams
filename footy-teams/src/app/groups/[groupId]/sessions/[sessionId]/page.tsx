@@ -7,12 +7,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { prisma } from "@/lib/prisma";
 import { FinalScoreDialog } from "@/components/final-score-dialog";
 import { SessionTeamsCard } from "@/components/session-teams-card";
+import { safeDisplayName } from "@/lib/player-name";
 import {
   addParticipantAction,
   removeParticipantAction,
   updateFixtureScoreAction,
   updateSessionTeamEditorAction,
 } from "./actions";
+import { getJerseyNumberMax } from "@/lib/group-player";
 
 type Props = {
   params: Promise<{ groupId: string; sessionId: string }>;
@@ -82,6 +84,7 @@ export default async function SessionPage({ params }: Props) {
   const addAction = addParticipantAction.bind(null, groupId, sessionId);
   const removeAction = removeParticipantAction.bind(null, groupId, sessionId);
   const fixtureColumnCount = canEdit ? 4 : 3;
+  const maxJerseyNumber = await getJerseyNumberMax(groupId);
 
   return (
     <div className="container py-8 space-y-6">
@@ -111,6 +114,7 @@ export default async function SessionPage({ params }: Props) {
         sessionDate={matchSession.sessionDate.toISOString()}
         status={matchSession.status}
         teams={matchSession.teams}
+        maxJerseyNumber={maxJerseyNumber}
       />
 
       {canEdit ? (
@@ -123,9 +127,9 @@ export default async function SessionPage({ params }: Props) {
             <div>
               Current delegate:{" "}
               <span className="font-semibold text-foreground">
-                {matchSession.teamEditorMember?.user?.name ??
-                  matchSession.teamEditorMember?.user?.email ??
-                  "None"}
+                {matchSession.teamEditorMember?.user?.name
+                  ? safeDisplayName(matchSession.teamEditorMember.user.name)
+                  : "None"}
               </span>
             </div>
             <form
@@ -140,7 +144,7 @@ export default async function SessionPage({ params }: Props) {
                 <option value="">No delegate</option>
                 {delegateCandidates.map((member) => (
                   <option key={member.id} value={member.id}>
-                    {member.user?.name ?? member.user?.email ?? "Unnamed user"}
+                    {safeDisplayName(member.user?.name)}
                   </option>
                 ))}
               </select>
@@ -172,12 +176,12 @@ export default async function SessionPage({ params }: Props) {
                   <option value="" disabled>
                     Select a member
                   </option>
-                  {availablePlayers.map((player) => (
-                    <option key={player.id} value={player.id}>
-                      {player.displayName}
-                    </option>
-                  ))}
-                </select>
+                {availablePlayers.map((player) => (
+                  <option key={player.id} value={player.id}>
+                    {safeDisplayName(player.displayName)}
+                  </option>
+                ))}
+              </select>
               </div>
               <Button type="submit" disabled={availablePlayers.length === 0}>
                 Add to session
@@ -192,7 +196,9 @@ export default async function SessionPage({ params }: Props) {
                   action={removeAction}
                   className="flex flex-col gap-2 rounded-lg border border-border px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div className="text-sm">{participant.player.displayName}</div>
+                  <div className="text-sm">
+                    {safeDisplayName(participant.player.displayName)}
+                  </div>
                   <input type="hidden" name="groupPlayerId" value={participant.groupPlayerId} />
                   <Button type="submit" size="sm" variant="secondary" className="w-full sm:w-auto">
                     Remove

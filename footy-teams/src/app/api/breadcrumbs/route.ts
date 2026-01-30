@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { safeDisplayName } from "@/lib/player-name";
 
 function parseSegments(path: string) {
   return path.split("/").filter(Boolean);
@@ -76,7 +77,9 @@ export async function GET(request: Request) {
       select: { displayName: true, groupId: true },
     });
     if (player && (!groupId || player.groupId === groupId)) {
-      labels[`/groups/${player.groupId}/players/${playerId}`] = player.displayName;
+      labels[`/groups/${player.groupId}/players/${playerId}`] = safeDisplayName(
+        player.displayName,
+      );
     }
   }
 

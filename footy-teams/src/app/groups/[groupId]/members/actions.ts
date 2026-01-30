@@ -6,7 +6,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { randomBytes } from "crypto";
-import { normalizePlayerName } from "@/lib/player-name";
+import { normalizePlayerName, safeDisplayName } from "@/lib/player-name";
 
 export async function updateMemberRole(
   groupId: string,
@@ -89,7 +89,7 @@ export async function updateMemberNumber(
     redirect(`/groups/${groupId}/members?error=invalid-number`);
   }
 
-  const displayName = member.user.name ?? member.user.email ?? "Member";
+  const displayName = safeDisplayName(member.user.name);
   const normalizedName = normalizePlayerName(displayName) || "member";
   const nickname = displayName.trim() || "Member";
   const nicknameNormalized = normalizePlayerName(nickname) || normalizedName;
@@ -127,10 +127,7 @@ export async function updateMemberNumber(
         },
       });
       const holderName =
-        existing?.user?.name ??
-        existing?.user?.email ??
-        existing?.displayName ??
-        "another member";
+        safeDisplayName(existing?.user?.name ?? existing?.displayName) ?? "another member";
       const params = new URLSearchParams({
         error: "number-taken",
         number: String(jerseyNumber),
@@ -194,7 +191,7 @@ export async function updateMemberNickname(
 
   const raw = formData.get("nickname");
   const value = raw ? String(raw).trim() : "";
-  const displayName = member.user.name ?? member.user.email ?? "Member";
+  const displayName = safeDisplayName(member.user.name);
   const nickname = value || displayName;
   const nicknameNormalized =
     normalizePlayerName(nickname) || normalizePlayerName(displayName) || "member";
@@ -209,7 +206,7 @@ export async function updateMemberNickname(
   });
   if (existing) {
     const holderName =
-      existing.user?.name ?? existing.user?.email ?? existing.displayName ?? "another member";
+      safeDisplayName(existing.user?.name ?? existing.displayName) ?? "another member";
     const params = new URLSearchParams({
       error: "nickname-taken",
       holder: holderName,

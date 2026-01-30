@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { safeDisplayName } from "@/lib/player-name";
 
 async function requireMember(groupId: string) {
   const session = await auth();
@@ -87,8 +88,8 @@ export async function submitMotmBallotAction(
 
   if (!voterPlayerId) {
     const sessionUser = await prisma.user.findUnique({ where: { id: userId } });
-    const fallbackName = sessionUser?.name ?? sessionUser?.email ?? "member";
-    const normalized = normalizeName(fallbackName);
+    const fallbackName = safeDisplayName(sessionUser?.name);
+    const normalized = normalizeName(fallbackName || "member");
     const matches = matchSession.participants.filter(
       (participant) => participant.player.normalizedName === normalized,
     );

@@ -6,6 +6,7 @@ import { toPng } from "html-to-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { safeDisplayName } from "@/lib/player-name";
 
 type Player = {
   displayName: string;
@@ -32,6 +33,7 @@ type Props = {
   sessionDate: string;
   status: string;
   teams: Team[];
+  maxJerseyNumber: number;
 };
 
 type FormationOption = {
@@ -148,6 +150,7 @@ function getKitTextClass(kitType: string) {
 function buildTeamNumbers(
   assignments: { id: string; player: { jerseyNumber: number | null } }[],
   seedKey: string,
+  maxNumber: number,
 ) {
   const rand = createRandom(hashString(seedKey));
   const map = new Map<string, number>();
@@ -161,7 +164,8 @@ function buildTeamNumbers(
     }
   }
 
-  const available = Array.from({ length: 999 }, (_, idx) => idx + 1).filter(
+  const safeMax = Math.min(Math.max(1, maxNumber), 999);
+  const available = Array.from({ length: safeMax }, (_, idx) => idx + 1).filter(
     (num) => !used.has(num),
   );
   const shuffled = shuffleWithRandom(available, rand);
@@ -178,28 +182,34 @@ function buildTeamNumbers(
 }
 
 function resolveDisplayName(player: Player, showNicknames: boolean) {
-  if (!showNicknames) return player.displayName;
+  if (!showNicknames) return safeDisplayName(player.displayName);
   const nickname = player.nickname?.trim();
-  return nickname || player.displayName;
+  return safeDisplayName(nickname || player.displayName);
 }
 
 function TeamsGrid({
   teams,
   sessionId,
   showNicknames,
+  maxJerseyNumber,
   compact,
   exportMode,
 }: {
   teams: Team[];
   sessionId: string;
   showNicknames: boolean;
+  maxJerseyNumber: number;
   compact?: boolean;
   exportMode?: boolean;
 }) {
   return (
     <div className={`grid gap-3 ${compact ? "grid-cols-1" : "md:grid-cols-2"}`}>
       {teams.map((team) => {
-        const teamNumbers = buildTeamNumbers(team.assignments, `${sessionId}-${team.id}`);
+        const teamNumbers = buildTeamNumbers(
+          team.assignments,
+          `${sessionId}-${team.id}`,
+          maxJerseyNumber,
+        );
         const colors = getKitColors(team.kitType);
         const kitColorClass = getKitColorClass(team.kitType);
         const kitTextClass = getKitTextClass(team.kitType);
@@ -300,6 +310,7 @@ export function SessionTeamsCard({
   sessionDate,
   status,
   teams,
+  maxJerseyNumber,
 }: Props) {
   const [showNicknames, setShowNicknames] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -358,6 +369,7 @@ export function SessionTeamsCard({
           teams={teams}
           sessionId={sessionId}
           showNicknames={NICKNAMES_ENABLED ? showNicknames : false}
+          maxJerseyNumber={maxJerseyNumber}
         />
       </CardContent>
 
@@ -381,6 +393,7 @@ export function SessionTeamsCard({
             teams={teams}
             sessionId={sessionId}
             showNicknames={NICKNAMES_ENABLED ? showNicknames : false}
+            maxJerseyNumber={maxJerseyNumber}
             compact
             exportMode
           />

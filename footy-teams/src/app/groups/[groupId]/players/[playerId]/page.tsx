@@ -5,6 +5,7 @@ import { LeagueMetricSelect } from "@/components/league-metric-select";
 import { PlayerMetricChart } from "@/components/player-metric-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
+import { safeDisplayName } from "@/lib/player-name";
 
 type Props = {
   params: Promise<{ groupId: string; playerId: string }>;
@@ -138,7 +139,9 @@ export default async function PlayerPage({ params, searchParams }: Props) {
     <div className="container py-8 space-y-6">
       <div>
         <p className="text-sm font-semibold text-primary">Player performance</p>
-        <h1 className="text-3xl font-semibold">{player.displayName}</h1>
+        <h1 className="text-3xl font-semibold">
+          {safeDisplayName(player.displayName)}
+        </h1>
       </div>
 
       <Card>

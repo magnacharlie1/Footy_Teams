@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getNextJerseyNumber } from "@/lib/group-player";
+import { safeDisplayName } from "@/lib/player-name";
 import { prisma } from "@/lib/prisma";
 import { acceptInviteAction } from "./actions";
 
@@ -56,8 +57,9 @@ export default async function InvitePage({ params }: Props) {
     orderBy: { joinedAt: "asc" },
   });
 
-  const adminName =
-    adminMember?.user?.name ?? adminMember?.user?.email ?? "the admin";
+  const adminName = adminMember?.user?.name
+    ? safeDisplayName(adminMember.user.name)
+    : "the admin";
   const suggestedNumber = existingMembership ? null : await getNextJerseyNumber(invite.groupId);
   const existingPlayer = existingMembership
     ? await prisma.groupPlayer.findFirst({

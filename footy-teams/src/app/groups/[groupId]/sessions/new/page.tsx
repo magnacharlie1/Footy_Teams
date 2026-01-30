@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
+import { safeDisplayName } from "@/lib/player-name";
 import { createSessionAction } from "./actions";
 import { SessionForm } from "./session-form";
 
@@ -39,7 +40,7 @@ export default async function NewSessionPage({ params }: Props) {
             action={action}
             members={members.map((member) => ({
               id: member.userId,
-              name: member.user?.name ?? member.user?.email ?? "Member",
+              name: safeDisplayName(member.user?.name),
             }))}
           />
         </CardContent>

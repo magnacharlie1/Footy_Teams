@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ensureGroupPlayerForUser } from "@/lib/group-player";
+import { safeDisplayName } from "@/lib/player-name";
 
 export async function joinGroupByCodeAction(formData: FormData) {
   const session = await auth();
@@ -61,7 +62,7 @@ export async function joinGroupByCodeAction(formData: FormData) {
     },
   });
 
-  const displayName = session.user.name ?? session.user.email ?? "Member";
+  const displayName = safeDisplayName(session.user.name);
   await ensureGroupPlayerForUser({
     groupId: invite.groupId,
     userId: session.user.id,

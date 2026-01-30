@@ -5,6 +5,7 @@ import { MotmBallotForm } from "@/components/motm-ballot-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
+import { safeDisplayName } from "@/lib/player-name";
 import { closeMotmAction, openMotmAction, submitMotmBallotAction } from "./actions";
 
 type Props = {
@@ -54,7 +55,7 @@ export default async function MotmPage({ params, searchParams }: Props) {
   for (const vote of votes) {
     const playerId = vote.votedGroupPlayerId;
     const current = tally.get(playerId) ?? {
-      name: vote.votedPlayer.displayName,
+      name: safeDisplayName(vote.votedPlayer.displayName),
       points: 0,
     };
     current.points += vote.points;
@@ -75,7 +76,7 @@ export default async function MotmPage({ params, searchParams }: Props) {
 
   const participantOptions = selectedSession?.participants.map((participant) => ({
     id: participant.groupPlayerId,
-    name: participant.player.displayName,
+    name: safeDisplayName(participant.player.displayName),
   }));
   const participantUserIds = new Set(
     selectedSession?.participants

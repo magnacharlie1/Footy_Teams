@@ -5,6 +5,7 @@ import { TeamBuilder } from "./team-builder";
 import { prisma } from "@/lib/prisma";
 import { aggregateLeagueStats, computeSessionStats } from "@/lib/scoring";
 import { saveTeamsAction } from "./actions";
+import { safeDisplayName } from "@/lib/player-name";
 
 type Props = {
   params: Promise<{ groupId: string; sessionId: string }>;
@@ -73,7 +74,7 @@ export default async function TeamBuilderPage({ params }: Props) {
     )?.id;
     return {
       id: p.groupPlayerId,
-      name: p.player.displayName,
+      name: safeDisplayName(p.player.displayName),
       weightedPoints: weightedLookup.get(p.groupPlayerId) ?? 0,
       teamId: currentTeamId ?? null,
     };
