@@ -39,12 +39,12 @@ export default async function GroupsPage({ searchParams }: Props) {
 
   return (
     <div className="container py-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-primary">Groups</p>
           <h1 className="text-2xl font-semibold">Your football groups</h1>
         </div>
-        <Button asChild>
+        <Button asChild className="w-full sm:w-auto">
           <Link href="/groups/new">Create group</Link>
         </Button>
       </div>
@@ -55,7 +55,7 @@ export default async function GroupsPage({ searchParams }: Props) {
             <CardHeader>
               <CardTitle className="text-lg">{group.name}</CardTitle>
             </CardHeader>
-            <CardContent className="flex items-center justify-between">
+            <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-sm text-muted-foreground">
                 {group.timezone} ·{" "}
                 {group.defaultDayOfWeek === null || group.defaultDayOfWeek === undefined
@@ -64,7 +64,7 @@ export default async function GroupsPage({ searchParams }: Props) {
                 {group.defaultStartTimeHHMM ? ` at ${group.defaultStartTimeHHMM}` : ""}
                 {group.defaultDurationMinutes ? ` · ${group.defaultDurationMinutes} mins` : ""}
               </div>
-              <Button variant="secondary" size="sm" asChild>
+              <Button variant="secondary" size="sm" asChild className="w-full sm:w-auto">
                 <Link href={`/groups/${group.id}`}>Open</Link>
               </Button>
             </CardContent>
@@ -100,7 +100,7 @@ export default async function GroupsPage({ searchParams }: Props) {
                 placeholder="Enter invite code or link"
                 className="sm:max-w-xs"
               />
-              <Button type="submit" variant="secondary">
+              <Button type="submit" variant="secondary" className="w-full sm:w-auto">
                 Join group
               </Button>
             </form>

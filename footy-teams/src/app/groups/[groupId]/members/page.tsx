@@ -148,7 +148,7 @@ export default async function MembersPage({ params, searchParams }: Props) {
           {group.members.map((member) => (
             <div
               key={member.id}
-              className="flex items-center justify-between rounded-lg border border-border px-3 py-2"
+              className="flex flex-col gap-3 rounded-lg border border-border px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
             >
               <div>
                 <div className="font-semibold">
@@ -164,11 +164,11 @@ export default async function MembersPage({ params, searchParams }: Props) {
                   ) : null}
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                 {isAdmin || member.userId === userId ? (
                   <form
                     action={updateMemberNumber.bind(null, groupId, member.id)}
-                    className="flex items-center gap-2"
+                    className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center"
                   >
                     <Input
                       name="jerseyNumber"
@@ -179,7 +179,7 @@ export default async function MembersPage({ params, searchParams }: Props) {
                       defaultValue={numberByUser.get(member.userId) ?? ""}
                       className="h-9 w-20"
                     />
-                    <Button type="submit" size="sm" variant="secondary">
+                    <Button type="submit" size="sm" variant="secondary" className="w-full sm:w-auto">
                       Save
                     </Button>
                   </form>
@@ -190,34 +190,34 @@ export default async function MembersPage({ params, searchParams }: Props) {
                 )}
                 {isAdmin ? (
                   <>
+                  <form
+                    action={updateMemberTeamEditor.bind(null, groupId, member.id)}
+                    className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center"
+                  >
+                    <input
+                      type="hidden"
+                      name="canEditTeams"
+                      value={member.canEditTeams ? "false" : "true"}
+                    />
+                    <Button type="submit" size="sm" variant="outline" className="w-full sm:w-auto">
+                      {member.canEditTeams ? "Remove team editor" : "Make team editor"}
+                    </Button>
+                  </form>
+                  {member.userId !== userId ? (
                     <form
-                      action={updateMemberTeamEditor.bind(null, groupId, member.id)}
-                      className="flex items-center gap-2"
+                      action={updateMemberRole.bind(null, groupId, member.id)}
+                      className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center"
                     >
                       <input
                         type="hidden"
-                        name="canEditTeams"
-                        value={member.canEditTeams ? "false" : "true"}
+                        name="role"
+                        value={member.role === "ADMIN" ? "MEMBER" : "ADMIN"}
                       />
-                      <Button type="submit" size="sm" variant="outline">
-                        {member.canEditTeams ? "Remove team editor" : "Make team editor"}
+                      <Button type="submit" size="sm" variant="outline" className="w-full sm:w-auto">
+                        {member.role === "ADMIN" ? "Remove admin" : "Make admin"}
                       </Button>
                     </form>
-                    {member.userId !== userId ? (
-                      <form
-                        action={updateMemberRole.bind(null, groupId, member.id)}
-                        className="flex items-center gap-2"
-                      >
-                        <input
-                          type="hidden"
-                          name="role"
-                          value={member.role === "ADMIN" ? "MEMBER" : "ADMIN"}
-                        />
-                        <Button type="submit" size="sm" variant="outline">
-                          {member.role === "ADMIN" ? "Remove admin" : "Make admin"}
-                        </Button>
-                      </form>
-                    ) : null}
+                  ) : null}
                   </>
                 ) : null}
               </div>

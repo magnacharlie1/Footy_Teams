@@ -85,21 +85,21 @@ export default async function SessionPage({ params }: Props) {
 
   return (
     <div className="container py-8 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-primary">
             {new Date(matchSession.sessionDate).toLocaleDateString("en-GB")}
           </p>
           <h1 className="text-2xl font-semibold">Session overview</h1>
         </div>
-        <div className="flex gap-2">
-          <Button asChild>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Button asChild className="w-full sm:w-auto">
             <a href={`/groups/${groupId}/sessions/${sessionId}/teams`}>Team builder</a>
           </Button>
-          <Button variant="secondary" asChild>
+          <Button variant="secondary" asChild className="w-full sm:w-auto">
             <a href={`/groups/${groupId}/sessions/${sessionId}/fixtures`}>Fixtures</a>
           </Button>
-          <Button variant="secondary" asChild>
+          <Button variant="secondary" asChild className="w-full sm:w-auto">
             <a href={`/groups/${groupId}/motm?sessionId=${sessionId}`}>MoTM voting</a>
           </Button>
         </div>
@@ -190,11 +190,11 @@ export default async function SessionPage({ params }: Props) {
                 <form
                   key={participant.id}
                   action={removeAction}
-                  className="flex items-center justify-between rounded-lg border border-border px-3 py-2"
+                  className="flex flex-col gap-2 rounded-lg border border-border px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="text-sm">{participant.player.displayName}</div>
                   <input type="hidden" name="groupPlayerId" value={participant.groupPlayerId} />
-                  <Button type="submit" size="sm" variant="secondary">
+                  <Button type="submit" size="sm" variant="secondary" className="w-full sm:w-auto">
                     Remove
                   </Button>
                 </form>
@@ -212,7 +212,8 @@ export default async function SessionPage({ params }: Props) {
           <CardTitle className="text-lg">Fixtures</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>#</TableHead>
@@ -254,7 +255,8 @@ export default async function SessionPage({ params }: Props) {
                 </TableRow>
               )}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

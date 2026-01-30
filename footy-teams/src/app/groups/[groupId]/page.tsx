@@ -55,16 +55,16 @@ export default async function GroupDashboard({ params, searchParams }: Props) {
       {joinedMessage ? (
         <PopupCard title="Welcome to the group" message={joinedMessage} />
       ) : null}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-primary">{group.timezone}</p>
           <h1 className="text-3xl font-semibold">{group.name}</h1>
         </div>
-        <div className="flex gap-2">
-          <Button asChild>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button asChild className="w-full sm:w-auto">
             <a href={`/groups/${group.id}/sessions/new`}>New session</a>
           </Button>
-          <Button variant="secondary" asChild>
+          <Button variant="secondary" asChild className="w-full sm:w-auto">
             <a href={`/groups/${group.id}/members`}>Members</a>
           </Button>
         </div>
@@ -79,7 +79,7 @@ export default async function GroupDashboard({ params, searchParams }: Props) {
             {group.sessions.map((session) => (
               <div
                 key={session.id}
-                className="flex items-center justify-between rounded-lg border border-border px-3 py-2"
+                className="flex flex-col gap-3 rounded-lg border border-border px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
                   <div className="font-semibold">
@@ -99,11 +99,11 @@ export default async function GroupDashboard({ params, searchParams }: Props) {
                     · {session.numTeams} teams · {session.status}
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="secondary" size="sm" asChild>
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <Button variant="secondary" size="sm" asChild className="w-full sm:w-auto">
                     <a href={`/groups/${group.id}/sessions/${session.id}`}>View</a>
                   </Button>
-                  <Button size="sm" asChild>
+                  <Button size="sm" asChild className="w-full sm:w-auto">
                     <a href={`/groups/${group.id}/sessions/${session.id}/teams`}>Teams</a>
                   </Button>
                   {canEdit ? (

@@ -80,18 +80,20 @@ export function Breadcrumbs() {
 
   return (
     <nav aria-label="Breadcrumb">
-      <ol className="flex items-center gap-2 text-sm text-muted-foreground">
+      <ol className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground sm:text-sm">
         {items.map((item, index) => {
           const isLast = index === items.length - 1;
           const label = labels[item.href] ?? item.label;
           return (
-            <li key={item.href} className="flex items-center gap-2">
+            <li key={item.href} className="flex min-w-0 items-center gap-2">
               {isLast ? (
-                <span className="font-semibold text-foreground">{label}</span>
+                <span className="max-w-[12rem] truncate font-semibold text-foreground sm:max-w-none">
+                  {label}
+                </span>
               ) : (
                 <Link
                   href={item.href}
-                  className="transition-colors hover:text-foreground"
+                  className="max-w-[12rem] truncate transition-colors hover:text-foreground sm:max-w-none"
                 >
                   {label}
                 </Link>

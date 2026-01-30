@@ -43,8 +43,8 @@ export default async function RootLayout({
         <Providers>
           <div className="flex min-h-screen flex-col">
             <header className="border-b border-border bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70">
-              <div className="container flex h-14 items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="container flex flex-col gap-2 py-3 sm:h-14 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
                   <Link
                     href="/"
                     className={cn(
@@ -57,7 +57,7 @@ export default async function RootLayout({
                   </Link>
                   <Breadcrumbs />
                 </div>
-                <nav className="flex items-center gap-4 text-sm">
+                <nav className="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
                   {session?.user ? (
                     <>
                       <Link href="/groups">Groups</Link>
@@ -67,7 +67,7 @@ export default async function RootLayout({
                           currentUserId={session.user.id}
                         />
                       ) : null}
-                      <span className="text-muted-foreground">
+                      <span className="hidden text-muted-foreground sm:inline">
                         {session.user.name ?? session.user.email}
                       </span>
                       <SignOutButton />

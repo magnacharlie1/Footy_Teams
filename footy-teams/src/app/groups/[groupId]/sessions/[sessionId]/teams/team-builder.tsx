@@ -147,22 +147,32 @@ export function TeamBuilder({
 
   return (
     <div className="container py-6 space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-primary">Team builder</p>
           <h1 className="text-2xl font-semibold">Manual or auto-balance</h1>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={handleAutoBalance} disabled={!canEdit}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Button
+            variant="secondary"
+            onClick={handleAutoBalance}
+            disabled={!canEdit}
+            className="w-full sm:w-auto"
+          >
             Auto-generate
           </Button>
-          <Button disabled={isPending || !canEdit} onClick={() => handleSave(false)}>
+          <Button
+            disabled={isPending || !canEdit}
+            onClick={() => handleSave(false)}
+            className="w-full sm:w-auto"
+          >
             Save draft
           </Button>
           <Button
             disabled={isPending || !canEdit}
             variant="default"
             onClick={() => handleSave(true)}
+            className="w-full sm:w-auto"
           >
             Publish teams
           </Button>
@@ -300,7 +310,7 @@ function DroppableColumn({
         isOver ? "border-primary bg-primary/5" : "border-border"
       }`}
     >
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="font-semibold">{title}</div>
           {subtitle ? <div className="text-xs text-muted-foreground">{subtitle}</div> : null}
@@ -355,13 +365,13 @@ function DraggableCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center justify-between rounded-md border border-border bg-white px-3 py-2 text-sm shadow-sm ${
+      className={`flex flex-col gap-2 rounded-md border border-border bg-white px-3 py-2 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between ${
         isDragging ? "opacity-70" : ""
       }`}
       {...attributes}
       {...(canEdit ? listeners : {})}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <span>{player.name}</span>
         <Badge variant="outline">{player.weightedPoints.toFixed(1)}</Badge>
       </div>
