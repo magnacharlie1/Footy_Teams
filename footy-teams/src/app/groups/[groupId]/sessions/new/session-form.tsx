@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 type Props = {
   action: (formData: FormData) => void | Promise<void>;
   members: { id: string; name: string }[];
+  defaultStartTimeHHMM?: string | null;
+  timezoneLabel?: string | null;
 };
 
 function normalizeLines(value: string) {
@@ -19,7 +21,7 @@ function normalizeLines(value: string) {
     .filter(Boolean);
 }
 
-export function SessionForm({ action, members }: Props) {
+export function SessionForm({ action, members, defaultStartTimeHHMM, timezoneLabel }: Props) {
   const [paste, setPaste] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set());
@@ -53,6 +55,21 @@ export function SessionForm({ action, members }: Props) {
         <div className="space-y-2">
           <Label htmlFor="numTeams">Teams (2 or 4)</Label>
           <Input id="numTeams" name="numTeams" type="number" min={2} max={4} step={2} />
+        </div>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="sessionTime">Start time</Label>
+          <Input
+            id="sessionTime"
+            name="sessionTime"
+            type="time"
+            required
+            defaultValue={defaultStartTimeHHMM ?? ""}
+          />
+          {timezoneLabel ? (
+            <p className="text-xs text-muted-foreground">Times shown in {timezoneLabel}.</p>
+          ) : null}
         </div>
       </div>
 

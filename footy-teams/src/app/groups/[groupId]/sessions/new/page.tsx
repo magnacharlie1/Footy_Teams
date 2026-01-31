@@ -21,6 +21,12 @@ export default async function NewSessionPage({ params }: Props) {
   });
   if (!membership) notFound();
 
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    select: { timezone: true, defaultStartTimeHHMM: true },
+  });
+  if (!group) notFound();
+
   const members = await prisma.groupMember.findMany({
     where: { groupId, isActive: true },
     include: { user: true },
@@ -42,6 +48,8 @@ export default async function NewSessionPage({ params }: Props) {
               id: member.userId,
               name: safeDisplayName(member.user?.name),
             }))}
+            defaultStartTimeHHMM={group.defaultStartTimeHHMM}
+            timezoneLabel={group.timezone}
           />
         </CardContent>
       </Card>

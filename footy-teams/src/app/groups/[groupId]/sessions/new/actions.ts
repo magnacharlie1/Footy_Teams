@@ -4,6 +4,7 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { zonedTimeToUtc } from "date-fns-tz";
 
 import { auth } from "@/auth";
 import { parseWhatsAppNames } from "@/lib/whatsapp";
@@ -12,6 +13,7 @@ import { safeDisplayName } from "@/lib/player-name";
 
 const sessionSchema = z.object({
   sessionDate: z.string(),
+  sessionTime: z.string().regex(/^\d{2}:\d{2}$/),
   numTeams: z.enum(["2", "4"]),
   paste: z.string().optional(),
 });
@@ -73,7 +75,18 @@ export async function createSessionAction(groupId: string, formData: FormData) {
     throw new Error("Invalid input");
   }
 
-  const sessionDate = new Date(parsed.data.sessionDate);
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    select: { timezone: true },
+  });
+  if (!group) {
+    throw new Error("Group not found");
+  }
+
+  const sessionDate = zonedTimeToUtc(
+    `${parsed.data.sessionDate}T${parsed.data.sessionTime}`,
+    group.timezone,
+  );
   const numTeams = Number(parsed.data.numTeams) as 2 | 4;
   const names = parseWhatsAppNames(parsed.data.paste ?? "");
   const memberUserIds = formData
