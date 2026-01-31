@@ -44,7 +44,36 @@ export async function updateProfileNameAction(
 
   const nextName = parsed.data;
   const displayName = safeDisplayName(nextName);
-  const normalizedName = normalizePlayerName(displayName) || "member";
+  let normalizedName = normalizePlayerName(displayName) || "member";
+  const isMemberName = normalizedName === "member";
+  if (isMemberName) {
+    normalizedName = `member-${session.user!.id}`;
+  }
+
+  const memberGroups = await prisma.groupMember.findMany({
+    where: { userId: session.user!.id, isActive: true },
+    select: { groupId: true },
+  });
+  const groupIds = memberGroups.map((entry) => entry.groupId);
+
+  if (groupIds.length && !isMemberName) {
+    const clash = await prisma.groupPlayer.findFirst({
+      where: {
+        groupId: { in: groupIds },
+        normalizedName,
+        userId: { not: session.user!.id },
+      },
+      select: { id: true },
+    });
+
+    if (clash) {
+      return {
+        message: "That name is already taken in one of your groups.",
+        fieldErrors: { name: ["Please choose a different name."] },
+        values: { name: raw },
+      };
+    }
+  }
 
   await prisma.$transaction(async (tx) => {
     await tx.user.update({

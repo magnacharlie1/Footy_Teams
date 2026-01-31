@@ -11,3 +11,10 @@ export function safeDisplayName(name?: string | null) {
   if (!trimmed) return "Member";
   return trimmed.includes("@") ? "Member" : trimmed;
 }
+
+export function needsProfileName(name?: string | null) {
+  const trimmed = name?.trim() || "";
+  if (!trimmed) return true;
+  if (trimmed.includes("@")) return true;
+  return trimmed.toLowerCase() === "member";
+}
