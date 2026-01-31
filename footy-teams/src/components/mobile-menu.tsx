@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { Home, Menu, User, Users, X } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { SignOutButton } from "@/components/sign-out-button";
 
 type Props = {
@@ -38,11 +37,11 @@ export function MobileMenu({ isAuthed }: Props) {
           aria-hidden="true"
         />
         <div
-          className={`absolute left-0 top-0 flex h-full w-72 flex-col gap-4 border-r border-border bg-slate-50 p-4 shadow-2xl ring-1 ring-border/50 transition-transform duration-200 ease-out dark:bg-slate-950 ${
+          className={`absolute left-0 top-0 flex h-full w-72 flex-col border-r border-border bg-slate-50 shadow-2xl ring-1 ring-border/50 transition-transform duration-200 ease-out dark:bg-slate-950 ${
             open ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between px-4 py-4">
             <div className="text-sm font-semibold text-muted-foreground">Menu</div>
             <button
               type="button"
@@ -54,40 +53,53 @@ export function MobileMenu({ isAuthed }: Props) {
             </button>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Button asChild variant="secondary" className="justify-start">
-              <Link href="/" onClick={() => setOpen(false)}>
-                <Home className="mr-2 h-4 w-4" aria-hidden="true" />
+          <nav className="flex-1 border-t border-border/60 px-4 py-4">
+            <div className="flex flex-col gap-1">
+              <Link
+                href="/"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground transition hover:bg-slate-100 dark:hover:bg-slate-900"
+              >
+                <Home className="h-4 w-4" aria-hidden="true" />
                 Home
               </Link>
-            </Button>
 
             {isAuthed ? (
               <>
-                <Button asChild variant="outline" className="justify-start">
-                  <Link href="/groups" onClick={() => setOpen(false)}>
-                    <Users className="mr-2 h-4 w-4" aria-hidden="true" />
-                    Groups
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" className="justify-start">
-                  <Link href="/profile" onClick={() => setOpen(false)}>
-                    <User className="mr-2 h-4 w-4" aria-hidden="true" />
-                    Profile
-                  </Link>
-                </Button>
-                <div className="pt-2">
-                  <SignOutButton />
-                </div>
+                <Link
+                  href="/groups"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground transition hover:bg-slate-100 dark:hover:bg-slate-900"
+                >
+                  <Users className="h-4 w-4" aria-hidden="true" />
+                  Groups
+                </Link>
+                <Link
+                  href="/profile"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground transition hover:bg-slate-100 dark:hover:bg-slate-900"
+                >
+                  <User className="h-4 w-4" aria-hidden="true" />
+                  Profile
+                </Link>
               </>
             ) : (
-              <Button asChild className="justify-start">
-                <Link href="/login" onClick={() => setOpen(false)}>
-                  Sign in
-                </Link>
-              </Button>
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-foreground transition hover:bg-slate-100 dark:hover:bg-slate-900"
+              >
+                Sign in
+              </Link>
             )}
-          </div>
+
+              {isAuthed ? (
+                <div className="pt-3">
+                  <SignOutButton />
+                </div>
+              ) : null}
+            </div>
+          </nav>
         </div>
       </div>
     </>
