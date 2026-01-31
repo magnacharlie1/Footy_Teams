@@ -25,7 +25,7 @@ export function MobileMenu({ isAuthed }: Props) {
       </button>
 
       <div
-        className={`fixed inset-0 z-50 transition ${
+        className={`fixed inset-0 z-[100] transition ${
           open ? "pointer-events-auto" : "pointer-events-none"
         }`}
       >
@@ -37,7 +37,7 @@ export function MobileMenu({ isAuthed }: Props) {
           aria-hidden="true"
         />
         <div
-          className={`absolute left-0 top-0 flex h-full w-72 flex-col border-r border-border bg-slate-50 shadow-2xl ring-1 ring-border/50 transition-transform duration-200 ease-out dark:bg-slate-950 ${
+          className={`absolute left-0 top-0 bottom-0 z-[110] flex w-72 flex-col border-r border-border bg-background shadow-2xl ring-1 ring-border/50 transition-transform duration-200 ease-out ${
             open ? "translate-x-0" : "-translate-x-full"
           }`}
         >
@@ -53,12 +53,12 @@ export function MobileMenu({ isAuthed }: Props) {
             </button>
           </div>
 
-          <nav className="flex-1 border-t border-border/60 px-4 py-4">
-            <div className="flex flex-col gap-1">
+          <nav className="flex-1 border-t border-border/60 bg-background px-4 py-4">
+            <div className="flex flex-col gap-2">
               <Link
                 href="/"
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground transition hover:bg-slate-100 dark:hover:bg-slate-900"
+                className="flex w-full items-center gap-2 rounded-md border border-border/60 bg-slate-100 px-3 py-2 text-sm font-medium text-foreground transition hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800"
               >
                 <Home className="h-4 w-4" aria-hidden="true" />
                 Home
@@ -69,7 +69,7 @@ export function MobileMenu({ isAuthed }: Props) {
                 <Link
                   href="/groups"
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground transition hover:bg-slate-100 dark:hover:bg-slate-900"
+                  className="flex w-full items-center gap-2 rounded-md border border-border/60 bg-slate-100 px-3 py-2 text-sm font-medium text-foreground transition hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800"
                 >
                   <Users className="h-4 w-4" aria-hidden="true" />
                   Groups
@@ -77,7 +77,7 @@ export function MobileMenu({ isAuthed }: Props) {
                 <Link
                   href="/profile"
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground transition hover:bg-slate-100 dark:hover:bg-slate-900"
+                  className="flex w-full items-center gap-2 rounded-md border border-border/60 bg-slate-100 px-3 py-2 text-sm font-medium text-foreground transition hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800"
                 >
                   <User className="h-4 w-4" aria-hidden="true" />
                   Profile
@@ -87,18 +87,18 @@ export function MobileMenu({ isAuthed }: Props) {
               <Link
                 href="/login"
                 onClick={() => setOpen(false)}
-                className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-foreground transition hover:bg-slate-100 dark:hover:bg-slate-900"
+                className="flex w-full items-center rounded-md border border-border/60 bg-slate-100 px-3 py-2 text-sm font-medium text-foreground transition hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800"
               >
                 Sign in
               </Link>
             )}
 
-              {isAuthed ? (
-                <div className="pt-3">
-                  <SignOutButton />
-                </div>
-              ) : null}
-            </div>
+            {isAuthed ? (
+              <div className="pt-3">
+                <SignOutButton className="flex w-full items-center rounded-md border border-border/60 bg-slate-100 px-3 py-2 text-sm font-semibold text-primary transition hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800" />
+              </div>
+            ) : null}
+          </div>
           </nav>
         </div>
       </div>
