@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Home, Menu, User, Users, X } from "lucide-react";
 
@@ -12,6 +12,13 @@ type Props = {
 
 export function MobileMenu({ isAuthed }: Props) {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.classList.toggle("menu-open", open);
+    return () => {
+      document.body.classList.remove("menu-open");
+    };
+  }, [open]);
 
   return (
     <>
@@ -25,19 +32,19 @@ export function MobileMenu({ isAuthed }: Props) {
       </button>
 
       <div
-        className={`fixed inset-0 z-[100] transition ${
+        className={`fixed inset-0 transition ${
           open ? "pointer-events-auto" : "pointer-events-none"
         }`}
       >
         <div
-          className={`absolute inset-0 bg-slate-900/40 transition-opacity dark:bg-slate-950/60 ${
+          className={`absolute inset-0 z-30 bg-black/60 transition-opacity backdrop-blur-[2px] dark:bg-black/70 ${
             open ? "opacity-100" : "opacity-0"
           }`}
           onClick={() => setOpen(false)}
           aria-hidden="true"
         />
         <div
-          className={`absolute left-0 top-0 bottom-0 z-[110] flex w-72 flex-col border-r border-border bg-background shadow-2xl ring-1 ring-border/50 transition-transform duration-200 ease-out ${
+          className={`absolute left-0 top-0 bottom-0 z-50 flex w-72 flex-col border-r border-border bg-background shadow-2xl ring-1 ring-border/50 transition-transform duration-200 ease-out ${
             open ? "translate-x-0" : "-translate-x-full"
           }`}
         >
