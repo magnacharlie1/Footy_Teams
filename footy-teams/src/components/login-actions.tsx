@@ -10,12 +10,13 @@ type Props = {
 };
 
 export function LoginActions({ callbackUrl = "/groups" }: Props) {
+  const postLoginUrl = `/post-login?next=${encodeURIComponent(callbackUrl)}`;
   return (
     <div className="grid w-full max-w-sm gap-3">
       <Button
         variant="default"
         className="w-full"
-        onClick={() => signIn("auth0", { callbackUrl })}
+        onClick={() => signIn("auth0", { callbackUrl: postLoginUrl })}
       >
         <LogIn className="mr-2 h-4 w-4" />
         Sign in

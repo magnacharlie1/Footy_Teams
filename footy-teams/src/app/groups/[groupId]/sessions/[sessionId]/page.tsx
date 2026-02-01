@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { prisma } from "@/lib/prisma";
 import { FinalScoreDialog } from "@/components/final-score-dialog";
@@ -10,6 +11,7 @@ import { SessionTeamsCard } from "@/components/session-teams-card";
 import { safeDisplayName } from "@/lib/player-name";
 import {
   addParticipantAction,
+  addGuestParticipantAction,
   removeParticipantAction,
   updateFixtureScoreAction,
   updateSessionTeamEditorAction,
@@ -82,6 +84,7 @@ export default async function SessionPage({ params }: Props) {
 
   const canEdit = membership.role === "ADMIN";
   const addAction = addParticipantAction.bind(null, groupId, sessionId);
+  const addGuestAction = addGuestParticipantAction.bind(null, groupId, sessionId);
   const removeAction = removeParticipantAction.bind(null, groupId, sessionId);
   const fixtureColumnCount = canEdit ? 4 : 3;
   const maxJerseyNumber = await getJerseyNumberMax(groupId);
@@ -186,6 +189,21 @@ export default async function SessionPage({ params }: Props) {
               <Button type="submit" disabled={availablePlayers.length === 0}>
                 Add to session
               </Button>
+            </form>
+
+            <form
+              action={addGuestAction}
+              className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end"
+            >
+              <div className="flex-1">
+                <label className="text-xs font-semibold text-muted-foreground">Add guest</label>
+                <Input
+                  name="guestName"
+                  placeholder="Guest name"
+                  className="mt-1"
+                />
+              </div>
+              <Button type="submit">Add guest</Button>
             </form>
 
             <div className="mt-4 space-y-2">

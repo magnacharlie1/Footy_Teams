@@ -2,10 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { performance } from "node:perf_hooks";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { computeSessionStats } from "@/lib/scoring";
+import { normalizePlayerName } from "@/lib/player-name";
 
 async function requireAdmin(groupId: string) {
   const session = await auth();
@@ -41,6 +43,52 @@ export async function addParticipantAction(
     create: {
       sessionId,
       groupPlayerId,
+    },
+  });
+
+  revalidatePath(`/groups/${groupId}/sessions/${sessionId}`);
+  revalidatePath(`/groups/${groupId}/sessions/${sessionId}/teams`);
+}
+
+export async function addGuestParticipantAction(
+  groupId: string,
+  sessionId: string,
+  formData: FormData,
+) {
+  await requireAdmin(groupId);
+  const rawName = String(formData.get("guestName") ?? "");
+  const displayName = rawName.trim();
+  if (!displayName) return;
+
+  const normalizedName = normalizePlayerName(displayName);
+  if (!normalizedName) return;
+
+  const existing = await prisma.groupPlayer.findFirst({
+    where: { groupId, normalizedName },
+  });
+
+  const player =
+    existing ??
+    (await prisma.groupPlayer.create({
+      data: {
+        groupId,
+        displayName,
+        normalizedName,
+        isActive: true,
+      },
+    }));
+
+  await prisma.sessionParticipant.upsert({
+    where: {
+      sessionId_groupPlayerId: {
+        sessionId,
+        groupPlayerId: player.id,
+      },
+    },
+    update: {},
+    create: {
+      sessionId,
+      groupPlayerId: player.id,
     },
   });
 
@@ -86,6 +134,7 @@ export async function updateFixtureScoreAction(
   fixtureId: string,
   formData: FormData,
 ) {
+  const startedAt = performance.now();
   await requireAdmin(groupId);
 
   const teamAScore = Number.parseInt(String(formData.get("teamAScore") ?? ""), 10);
@@ -119,19 +168,6 @@ export async function updateFixtureScoreAction(
       }),
     ]);
 
-    const playerIds = assignments.map((assignment) => assignment.groupPlayerId);
-
-    if (playerIds.length) {
-      await tx.sessionStat.deleteMany({
-        where: {
-          sessionId,
-          groupPlayerId: { notIn: playerIds },
-        },
-      });
-    } else {
-      await tx.sessionStat.deleteMany({ where: { sessionId } });
-    }
-
     const sessionStats = computeSessionStats({
       sessionId,
       fixtures,
@@ -141,24 +177,15 @@ export async function updateFixtureScoreAction(
       })),
     });
 
-    for (const stat of sessionStats) {
-      await tx.sessionStat.upsert({
-        where: {
-          sessionId_groupPlayerId: {
-            sessionId,
-            groupPlayerId: stat.playerId,
-          },
-        },
-        update: {
-          totalPoints: stat.totalPoints,
-          winPoints: stat.winPoints,
-        },
-        create: {
+    await tx.sessionStat.deleteMany({ where: { sessionId } });
+    if (sessionStats.length) {
+      await tx.sessionStat.createMany({
+        data: sessionStats.map((stat) => ({
           sessionId,
           groupPlayerId: stat.playerId,
           totalPoints: stat.totalPoints,
           winPoints: stat.winPoints,
-        },
+        })),
       });
     }
 
@@ -172,6 +199,11 @@ export async function updateFixtureScoreAction(
   revalidatePath(`/groups/${groupId}/sessions/${sessionId}`);
   revalidatePath(`/groups/${groupId}/sessions/${sessionId}/teams`);
   revalidatePath(`/groups/${groupId}/league`);
+
+  const durationMs = Math.round(performance.now() - startedAt);
+  console.info(
+    `[perf] updateFixtureScoreAction session=${sessionId} fixture=${fixtureId} ${durationMs}ms`,
+  );
 }
 
 export async function updateSessionTeamEditorAction(

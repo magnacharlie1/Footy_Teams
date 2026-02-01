@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -25,6 +25,7 @@ function fallbackLabelFor(segment: string, parentSegment?: string) {
 export function Breadcrumbs() {
   const pathname = usePathname();
   const [labels, setLabels] = useState<Record<string, string>>({});
+  const cacheRef = useRef<Map<string, Record<string, string>>>(new Map());
 
   const items = useMemo<BreadcrumbItem[]>(() => {
     if (!pathname || pathname === "/") {
@@ -55,6 +56,12 @@ export function Breadcrumbs() {
       return;
     }
 
+    const cached = cacheRef.current.get(pathname);
+    if (cached) {
+      setLabels(cached);
+      return;
+    }
+
     fetch(`/api/breadcrumbs?path=${encodeURIComponent(pathname)}`)
       .then((response) => {
         if (!response.ok) return null;
@@ -62,6 +69,7 @@ export function Breadcrumbs() {
       })
       .then((data) => {
         if (!isActive || !data?.labels) return;
+        cacheRef.current.set(pathname, data.labels);
         setLabels(data.labels);
       })
       .catch(() => {

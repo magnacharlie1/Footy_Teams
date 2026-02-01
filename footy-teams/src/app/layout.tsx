@@ -8,7 +8,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { fontSans } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
-import { safeDisplayName } from "@/lib/player-name";
+import { needsProfileName, safeDisplayName } from "@/lib/player-name";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Home, User } from "lucide-react";
@@ -96,7 +96,7 @@ export default async function RootLayout({
                 </nav>
               </div>
             </header>
-            <CompleteProfileBanner show={Boolean(session?.user && !session.user.name)} />
+            <CompleteProfileBanner show={Boolean(session?.user && needsProfileName(session.user.name))} />
             <main className="flex-1">{children}</main>
           </div>
         </Providers>

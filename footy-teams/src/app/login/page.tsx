@@ -22,6 +22,7 @@ export default function LoginPage({ searchParams }: Props) {
       return rawCallbackUrl;
     }
   })();
+  const postLoginUrl = `/post-login?next=${encodeURIComponent(callbackUrl ?? "/groups")}`;
   const devAuthEnabled =
     process.env.DEV_AUTH_BYPASS === "true" &&
     process.env.NODE_ENV !== "production";
@@ -43,12 +44,12 @@ export default function LoginPage({ searchParams }: Props) {
           <DevAuthToggleButton
             mode="demo"
             label="Create demo user"
-            redirectTo={callbackUrl ?? "/groups"}
+            redirectTo={postLoginUrl}
           />
           <DevAuthToggleButton
             mode="enable"
             label="Use dev auth"
-            redirectTo={callbackUrl ?? "/groups"}
+            redirectTo={postLoginUrl}
           />
         </div>
       ) : null}

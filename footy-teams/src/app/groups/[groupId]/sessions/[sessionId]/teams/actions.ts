@@ -3,6 +3,7 @@
 import "server-only";
 
 import { revalidatePath } from "next/cache";
+import { performance } from "node:perf_hooks";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -16,6 +17,7 @@ export async function saveTeamsAction(
   groupId: string,
   input: SaveAssignmentsInput,
 ) {
+  const startedAt = performance.now();
   const session = await auth();
   if (!session?.user) {
     throw new Error("Unauthorized");
@@ -103,4 +105,11 @@ export async function saveTeamsAction(
 
   revalidatePath(`/groups/${groupId}/sessions/${sessionId}`);
   revalidatePath(`/groups/${groupId}/sessions/${sessionId}/teams`);
+
+  const durationMs = Math.round(performance.now() - startedAt);
+  console.info(
+    `[perf] saveTeamsAction session=${sessionId} assignments=${input.assignments.length} publish=${Boolean(
+      input.publish,
+    )} ${durationMs}ms`,
+  );
 }
