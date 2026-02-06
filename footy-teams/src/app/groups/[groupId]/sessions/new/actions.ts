@@ -4,7 +4,7 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { zonedTimeToUtc } from "date-fns-tz";
+import { fromZonedTime } from "date-fns-tz";
 
 import { auth } from "@/auth";
 import { parseWhatsAppNames } from "@/lib/whatsapp";
@@ -83,7 +83,7 @@ export async function createSessionAction(groupId: string, formData: FormData) {
     throw new Error("Group not found");
   }
 
-  const sessionDate = zonedTimeToUtc(
+  const sessionDate = fromZonedTime(
     `${parsed.data.sessionDate}T${parsed.data.sessionTime}`,
     group.timezone,
   );
