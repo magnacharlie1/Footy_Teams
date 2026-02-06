@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { unstable_cache } from "next/cache";
 import { performance } from "node:perf_hooks";
 
 import { auth } from "@/auth";
@@ -11,6 +12,62 @@ import { safeDisplayName } from "@/lib/player-name";
 type Props = {
   params: Promise<{ groupId: string; sessionId: string }>;
 };
+
+async function loadGroupHistoryStats(groupId: string) {
+  const cacheKey = `group-history-${groupId}`;
+  const cached = unstable_cache(
+    async () => {
+      const history = await prisma.matchSession.findMany({
+        where: { groupId },
+        include: {
+          fixtures: {
+            select: {
+              teamAId: true,
+              teamBId: true,
+              teamAScore: true,
+              teamBScore: true,
+            },
+          },
+          teams: {
+            include: {
+              assignments: { select: { groupPlayerId: true, teamId: true } },
+            },
+          },
+        },
+      });
+
+      const sessionStats = history.flatMap((s) =>
+        computeSessionStats({
+          sessionId: s.id,
+          fixtures: s.fixtures.map((f) => ({
+            teamAId: f.teamAId,
+            teamBId: f.teamBId,
+            teamAScore: f.teamAScore,
+            teamBScore: f.teamBScore,
+          })),
+          assignments: s.teams.flatMap((t) =>
+            t.assignments.map((a) => ({
+              playerId: a.groupPlayerId,
+              teamId: a.teamId,
+            })),
+          ),
+        }),
+      );
+
+      const leagueStats = aggregateLeagueStats(sessionStats);
+      return {
+        weightedLookupEntries: leagueStats.map((stat) => [
+          stat.playerId,
+          stat.weightedPoints,
+        ]) as Array<[string, number]>,
+      };
+    },
+    [cacheKey],
+    { tags: [cacheKey] },
+  );
+
+  return cached();
+}
 
 export default async function TeamBuilderPage({ params }: Props) {
   const startedAt = performance.now();
@@ -27,7 +84,7 @@ export default async function TeamBuilderPage({ params }: Props) {
   if (!session?.user) redirect("/login");
   markStep("auth");
 
-  const [membership, matchSession, history] = await Promise.all([
+  const [membership, matchSession, historyStats] = await Promise.all([
     prisma.groupMember.findFirst({
       where: { groupId, userId: session.user.id, isActive: true },
       select: { id: true, role: true, canEditTeams: true },
@@ -49,54 +106,16 @@ export default async function TeamBuilderPage({ params }: Props) {
         },
       },
     }),
-    prisma.matchSession.findMany({
-      where: { groupId },
-      include: {
-        fixtures: {
-          select: {
-            teamAId: true,
-            teamBId: true,
-            teamAScore: true,
-            teamBScore: true,
-          },
-        },
-        teams: {
-          include: {
-            assignments: { select: { groupPlayerId: true, teamId: true } },
-          },
-        },
-      },
-    }),
+    loadGroupHistoryStats(groupId),
   ]);
   markStep("membership+session+history");
 
   if (!membership) notFound();
   if (!matchSession) notFound();
 
-  const sessionStats = history.flatMap((s) =>
-    computeSessionStats({
-      sessionId: s.id,
-      fixtures: s.fixtures.map((f) => ({
-        teamAId: f.teamAId,
-        teamBId: f.teamBId,
-        teamAScore: f.teamAScore,
-        teamBScore: f.teamBScore,
-      })),
-      assignments: s.teams.flatMap((t) =>
-        t.assignments.map((a) => ({
-          playerId: a.groupPlayerId,
-          teamId: a.teamId,
-        })),
-      ),
-    }),
-  );
   markStep("session_stats");
-
-  const leagueStats = aggregateLeagueStats(sessionStats);
   markStep("league_stats");
-  const weightedLookup = new Map<string, number>(
-    leagueStats.map((stat) => [stat.playerId, stat.weightedPoints]),
-  );
+  const weightedLookup = new Map<string, number>(historyStats.weightedLookupEntries);
 
   const players = matchSession.participants.map((p) => {
     const currentTeamId = matchSession.teams.find((t) =>
