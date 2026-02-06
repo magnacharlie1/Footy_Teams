@@ -27,37 +27,51 @@ export default async function TeamBuilderPage({ params }: Props) {
   if (!session?.user) redirect("/login");
   markStep("auth");
 
-  const membership = await prisma.groupMember.findFirst({
-    where: { groupId, userId: session.user.id, isActive: true },
-  });
-  if (!membership) notFound();
-  markStep("membership");
-
-  const matchSession = await prisma.matchSession.findUnique({
-    where: { id: sessionId },
-    include: {
-      teamEditorMember: true,
-      participants: { include: { player: true } },
-      teams: {
-        orderBy: { index: "asc" },
-        include: {
-          assignments: true,
+  const [membership, matchSession, history] = await Promise.all([
+    prisma.groupMember.findFirst({
+      where: { groupId, userId: session.user.id, isActive: true },
+      select: { id: true, role: true, canEditTeams: true },
+    }),
+    prisma.matchSession.findUnique({
+      where: { id: sessionId },
+      include: {
+        teamEditorMember: true,
+        participants: {
+          include: {
+            player: { select: { displayName: true } },
+          },
+        },
+        teams: {
+          orderBy: { index: "asc" },
+          include: {
+            assignments: { select: { groupPlayerId: true, teamId: true } },
+          },
         },
       },
-    },
-  });
+    }),
+    prisma.matchSession.findMany({
+      where: { groupId },
+      include: {
+        fixtures: {
+          select: {
+            teamAId: true,
+            teamBId: true,
+            teamAScore: true,
+            teamBScore: true,
+          },
+        },
+        teams: {
+          include: {
+            assignments: { select: { groupPlayerId: true, teamId: true } },
+          },
+        },
+      },
+    }),
+  ]);
+  markStep("membership+session+history");
 
+  if (!membership) notFound();
   if (!matchSession) notFound();
-  markStep("session_lookup");
-
-  const history = await prisma.matchSession.findMany({
-    where: { groupId },
-    include: {
-      fixtures: true,
-      teams: { include: { assignments: true } },
-    },
-  });
-  markStep("history");
 
   const sessionStats = history.flatMap((s) =>
     computeSessionStats({
