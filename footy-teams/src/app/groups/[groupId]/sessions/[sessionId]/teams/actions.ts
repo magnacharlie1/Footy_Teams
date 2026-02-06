@@ -49,15 +49,73 @@ export async function saveTeamsAction(
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.teamAssignment.deleteMany({ where: { sessionId } });
-    if (input.assignments.length) {
+    const existingAssignments = await tx.teamAssignment.findMany({
+      where: { sessionId },
+      select: { groupPlayerId: true, teamId: true, positionSlot: true },
+    });
+
+    const incomingByPlayer = new Map(
+      input.assignments.map((assignment) => [
+        assignment.playerId,
+        {
+          teamId: assignment.teamId,
+          positionSlot: assignment.positionSlot ?? null,
+        },
+      ]),
+    );
+    const existingByPlayer = new Map(
+      existingAssignments.map((assignment) => [
+        assignment.groupPlayerId,
+        {
+          teamId: assignment.teamId,
+          positionSlot: assignment.positionSlot ?? null,
+        },
+      ]),
+    );
+
+    const playersToDelete = existingAssignments
+      .filter((assignment) => !incomingByPlayer.has(assignment.groupPlayerId))
+      .map((assignment) => assignment.groupPlayerId);
+
+    if (playersToDelete.length) {
+      await tx.teamAssignment.deleteMany({
+        where: { sessionId, groupPlayerId: { in: playersToDelete } },
+      });
+    }
+
+    const assignmentsToCreate = input.assignments.filter(
+      (assignment) => !existingByPlayer.has(assignment.playerId),
+    );
+    if (assignmentsToCreate.length) {
       await tx.teamAssignment.createMany({
-        data: input.assignments.map((assignment) => ({
+        data: assignmentsToCreate.map((assignment) => ({
           sessionId,
           teamId: assignment.teamId,
           groupPlayerId: assignment.playerId,
           positionSlot: assignment.positionSlot ?? null,
         })),
+      });
+    }
+
+    const assignmentsToUpdate = input.assignments.filter((assignment) => {
+      const existing = existingByPlayer.get(assignment.playerId);
+      if (!existing) return false;
+      const positionSlot = assignment.positionSlot ?? null;
+      return existing.teamId !== assignment.teamId || existing.positionSlot !== positionSlot;
+    });
+
+    for (const assignment of assignmentsToUpdate) {
+      await tx.teamAssignment.update({
+        where: {
+          sessionId_groupPlayerId: {
+            sessionId,
+            groupPlayerId: assignment.playerId,
+          },
+        },
+        data: {
+          teamId: assignment.teamId,
+          positionSlot: assignment.positionSlot ?? null,
+        },
       });
     }
 
