@@ -50,6 +50,12 @@ export default async function MotmPage({ params, searchParams }: Props) {
       : { session: { groupId } },
     include: { votedPlayer: true },
   });
+  const dodVotes = await prisma.dickOfDayVote.findMany({
+    where: selectedSession
+      ? { sessionId: selectedSession.id }
+      : { session: { groupId } },
+    include: { votedPlayer: true },
+  });
 
   const tally = new Map<string, { name: string; points: number }>();
   for (const vote of votes) {
@@ -69,6 +75,29 @@ export default async function MotmPage({ params, searchParams }: Props) {
   const rankedLeaderboard = leaderboard.map((entry, index) => {
     if (index === 0) return { ...entry, rankLabel: "1", rank: 1 };
     const prev = leaderboard[index - 1];
+    const sameRank = entry.points === prev.points;
+    const rank = sameRank ? index : index + 1;
+    return { ...entry, rank, rankLabel: sameRank ? "-" : String(rank) };
+  });
+
+  const dodTally = new Map<string, { name: string; points: number }>();
+  for (const vote of dodVotes) {
+    const playerId = vote.votedGroupPlayerId;
+    const current = dodTally.get(playerId) ?? {
+      name: safeDisplayName(vote.votedPlayer.displayName),
+      points: 0,
+    };
+    current.points += vote.points;
+    dodTally.set(playerId, current);
+  }
+
+  const dodLeaderboard = Array.from(dodTally.entries())
+    .map(([playerId, data]) => ({ playerId, ...data }))
+    .sort((a, b) => b.points - a.points);
+
+  const rankedDodLeaderboard = dodLeaderboard.map((entry, index) => {
+    if (index === 0) return { ...entry, rankLabel: "1", rank: 1 };
+    const prev = dodLeaderboard[index - 1];
     const sameRank = entry.points === prev.points;
     const rank = sameRank ? index : index + 1;
     return { ...entry, rank, rankLabel: sameRank ? "-" : String(rank) };
@@ -152,7 +181,7 @@ export default async function MotmPage({ params, searchParams }: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Top votes</CardTitle>
+          <CardTitle>MoTM votes</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           {rankedLeaderboard.map((entry) => (
@@ -170,6 +199,33 @@ export default async function MotmPage({ params, searchParams }: Props) {
             </div>
           ))}
           {rankedLeaderboard.length === 0 && (
+            <div className="text-sm text-muted-foreground">
+              No votes yet. Votes appear once voting opens.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Dick of the day votes</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {rankedDodLeaderboard.map((entry) => (
+            <div
+              key={entry.playerId}
+              className="flex items-center justify-between rounded-lg border border-border px-3 py-2"
+            >
+              <div className="flex items-center gap-3">
+                <div className="text-xs font-semibold text-muted-foreground">
+                  {entry.rankLabel}
+                </div>
+                <div className="font-semibold">{entry.name}</div>
+              </div>
+              <div className="text-xs text-muted-foreground">{entry.points} pts</div>
+            </div>
+          ))}
+          {rankedDodLeaderboard.length === 0 && (
             <div className="text-sm text-muted-foreground">
               No votes yet. Votes appear once voting opens.
             </div>

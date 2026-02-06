@@ -19,10 +19,11 @@ export function MotmBallotForm({ action, options, disabled = false }: Props) {
   const [firstChoice, setFirstChoice] = useState("");
   const [secondChoice, setSecondChoice] = useState("");
   const [thirdChoice, setThirdChoice] = useState("");
+  const [dodChoice, setDodChoice] = useState("");
 
   const disabledIds = useMemo(
-    () => new Set([firstChoice, secondChoice, thirdChoice].filter(Boolean)),
-    [firstChoice, secondChoice, thirdChoice],
+    () => new Set([firstChoice, secondChoice, thirdChoice, dodChoice].filter(Boolean)),
+    [firstChoice, secondChoice, thirdChoice, dodChoice],
   );
 
   const optionList = options.map((option) => ({
@@ -104,6 +105,32 @@ export function MotmBallotForm({ action, options, disabled = false }: Props) {
               key={player.id}
               value={player.id}
               disabled={player.isSelected && player.id !== thirdChoice}
+            >
+              {player.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="space-y-1 md:col-span-3">
+        <label className="text-xs font-semibold text-muted-foreground">
+          Dick of the day (1 pt)
+        </label>
+        <select
+          name="dodChoice"
+          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+          value={dodChoice}
+          onChange={(event) => setDodChoice(event.target.value)}
+          required
+          disabled={disabled}
+        >
+          <option value="" disabled>
+            Select player
+          </option>
+          {optionList.map((player) => (
+            <option
+              key={player.id}
+              value={player.id}
+              disabled={player.isSelected && player.id !== dodChoice}
             >
               {player.name}
             </option>

@@ -38,6 +38,11 @@ const metricOptions = [
     label: "MoTM points",
     description: "1 point for each session you finish top of the MoTM vote.",
   },
+  {
+    value: "dodPoints",
+    label: "Dick of the day points",
+    description: "1 point for each session you finish top of the Dick of the Day vote.",
+  },
 ];
 
 export default async function PlayerPage({ params, searchParams }: Props) {
@@ -74,6 +79,10 @@ export default async function PlayerPage({ params, searchParams }: Props) {
     where: { session: { groupId } },
     select: { sessionId: true, votedGroupPlayerId: true, points: true },
   });
+  const dodVotes = await prisma.dickOfDayVote.findMany({
+    where: { session: { groupId } },
+    select: { sessionId: true, votedGroupPlayerId: true, points: true },
+  });
 
   const pointsBySession = new Map<string, Map<string, number>>();
   for (const vote of motmVotes) {
@@ -99,6 +108,30 @@ export default async function PlayerPage({ params, searchParams }: Props) {
     winnersBySession.set(sessionId, winners);
   }
 
+  const dodPointsBySession = new Map<string, Map<string, number>>();
+  for (const vote of dodVotes) {
+    const sessionPoints = dodPointsBySession.get(vote.sessionId) ?? new Map<string, number>();
+    sessionPoints.set(
+      vote.votedGroupPlayerId,
+      (sessionPoints.get(vote.votedGroupPlayerId) ?? 0) + vote.points,
+    );
+    dodPointsBySession.set(vote.sessionId, sessionPoints);
+  }
+
+  const dodWinnersBySession = new Map<string, Set<string>>();
+  for (const [sessionId, sessionPoints] of dodPointsBySession.entries()) {
+    let max = 0;
+    for (const value of sessionPoints.values()) {
+      if (value > max) max = value;
+    }
+    if (max === 0) continue;
+    const winners = new Set<string>();
+    for (const [id, value] of sessionPoints.entries()) {
+      if (value === max) winners.add(id);
+    }
+    dodWinnersBySession.set(sessionId, winners);
+  }
+
   const orderedStats = [...stats].sort((a, b) => {
     const dateDiff = a.session.sessionDate.getTime() - b.session.sessionDate.getTime();
     if (dateDiff !== 0) return dateDiff;
@@ -108,6 +141,7 @@ export default async function PlayerPage({ params, searchParams }: Props) {
   let cumulativeTotal = 0;
   let cumulativeWin = 0;
   let cumulativeMotm = 0;
+  let cumulativeDod = 0;
   let sessionCount = 0;
 
   const data = orderedStats.map((stat) => {
@@ -116,6 +150,11 @@ export default async function PlayerPage({ params, searchParams }: Props) {
     cumulativeWin += stat.winPoints;
     if (winnersBySession.get(stat.sessionId)?.has(playerId)) {
       cumulativeMotm += 1;
+      cumulativeTotal += 3;
+    }
+    if (dodWinnersBySession.get(stat.sessionId)?.has(playerId)) {
+      cumulativeDod += 1;
+      cumulativeTotal -= 1;
     }
 
     const value =
@@ -127,7 +166,9 @@ export default async function PlayerPage({ params, searchParams }: Props) {
             ? cumulativeWin
             : selectedMetric === "motmPoints"
               ? cumulativeMotm
-              : cumulativeWin / sessionCount;
+              : selectedMetric === "dodPoints"
+                ? cumulativeDod
+                : cumulativeWin / sessionCount;
 
     return { date: stat.session.sessionDate.toISOString(), value };
   });

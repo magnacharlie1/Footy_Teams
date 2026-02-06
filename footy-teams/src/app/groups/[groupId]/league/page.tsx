@@ -20,6 +20,7 @@ const metricOptions = [
   { value: "totalWinPoints", label: "Total win points" },
   { value: "weightedWinPoints", label: "Weighted win points" },
   { value: "motmPoints", label: "MoTM points" },
+  { value: "dodPoints", label: "Dick of the day points" },
 ];
 
 export default async function LeaguePage({ params, searchParams }: Props) {
@@ -53,6 +54,10 @@ export default async function LeaguePage({ params, searchParams }: Props) {
   });
 
   const motmVotes = await prisma.motmVote.findMany({
+    where: { session: { groupId } },
+    select: { sessionId: true, votedGroupPlayerId: true, points: true },
+  });
+  const dodVotes = await prisma.dickOfDayVote.findMany({
     where: { session: { groupId } },
     select: { sessionId: true, votedGroupPlayerId: true, points: true },
   });
@@ -105,6 +110,34 @@ export default async function LeaguePage({ params, searchParams }: Props) {
     return winnersBySession;
   };
 
+  const buildDodWinners = (sessionIds: Set<string>) => {
+    const pointsBySession = new Map<string, Map<string, number>>();
+    for (const vote of dodVotes) {
+      if (!sessionIds.has(vote.sessionId)) continue;
+      const sessionPoints = pointsBySession.get(vote.sessionId) ?? new Map<string, number>();
+      sessionPoints.set(
+        vote.votedGroupPlayerId,
+        (sessionPoints.get(vote.votedGroupPlayerId) ?? 0) + vote.points,
+      );
+      pointsBySession.set(vote.sessionId, sessionPoints);
+    }
+
+    const winnersBySession = new Map<string, Set<string>>();
+    for (const [sessionId, sessionPoints] of pointsBySession.entries()) {
+      let max = 0;
+      for (const value of sessionPoints.values()) {
+        if (value > max) max = value;
+      }
+      if (max === 0) continue;
+      const winners = new Set<string>();
+      for (const [playerId, value] of sessionPoints.entries()) {
+        if (value === max) winners.add(playerId);
+      }
+      winnersBySession.set(sessionId, winners);
+    }
+    return winnersBySession;
+  };
+
   const computeMotmPoints = (sessionIds: Set<string>) => {
     const winnersBySession = buildMotmWinners(sessionIds);
     const motmPoints = new Map<string, number>();
@@ -116,11 +149,27 @@ export default async function LeaguePage({ params, searchParams }: Props) {
     return motmPoints;
   };
 
-  type LeagueStat = ReturnType<typeof aggregateLeagueStats>[number] & { motmPoints: number };
+  const computeDodPoints = (sessionIds: Set<string>) => {
+    const winnersBySession = buildDodWinners(sessionIds);
+    const dodPoints = new Map<string, number>();
+    for (const winners of winnersBySession.values()) {
+      for (const playerId of winners) {
+        dodPoints.set(playerId, (dodPoints.get(playerId) ?? 0) + 1);
+      }
+    }
+    return dodPoints;
+  };
+
+  type LeagueStat = ReturnType<typeof aggregateLeagueStats>[number] & {
+    motmPoints: number;
+    dodPoints: number;
+  };
   const metricValue = (stat: LeagueStat) => {
     switch (selectedMetric) {
       case "motmPoints":
         return stat.motmPoints;
+      case "dodPoints":
+        return stat.dodPoints;
       case "totalPoints":
         return stat.totalPoints;
       case "weightedPoints":
@@ -141,17 +190,34 @@ export default async function LeaguePage({ params, searchParams }: Props) {
     return diff !== 0 ? diff : a.playerId.localeCompare(b.playerId);
   };
   const formatMetric = (value: number) =>
-    selectedMetric === "motmPoints" || selectedMetric.startsWith("total")
+    selectedMetric === "motmPoints" ||
+    selectedMetric === "dodPoints" ||
+    selectedMetric.startsWith("total")
       ? value.toFixed(0)
       : value.toFixed(2);
 
   const allSessionIds = new Set(Array.from(sessionsMeta.keys()));
   const motmWinnersAll = buildMotmWinners(allSessionIds);
+  const dodWinnersAll = buildDodWinners(allSessionIds);
   const motmPointsAll = computeMotmPoints(allSessionIds);
-  const currentStats = aggregateLeagueStats(allStats)
+  const dodPointsAll = computeDodPoints(allSessionIds);
+  const bonusFor = (sessionId: string, playerId: string) => {
+    let bonus = 0;
+    if (motmWinnersAll.get(sessionId)?.has(playerId)) bonus += 3;
+    if (dodWinnersAll.get(sessionId)?.has(playerId)) bonus -= 1;
+    return bonus;
+  };
+
+  const adjustedStats = allStats.map((stat) => ({
+    ...stat,
+    totalPoints: stat.totalPoints + bonusFor(stat.sessionId, stat.playerId),
+  }));
+
+  const currentStats = aggregateLeagueStats(adjustedStats)
     .map((stat) => ({
       ...stat,
       motmPoints: motmPointsAll.get(stat.playerId) ?? 0,
+      dodPoints: dodPointsAll.get(stat.playerId) ?? 0,
     }))
     .sort(byMetricDesc);
 
@@ -163,6 +229,15 @@ export default async function LeaguePage({ params, searchParams }: Props) {
       )
     : new Set<string>();
   const motmPointsPrevious = latestSessionDate ? computeMotmPoints(previousSessionIds) : new Map();
+  const dodPointsPrevious = latestSessionDate ? computeDodPoints(previousSessionIds) : new Map();
+  const motmWinnersPrevious = latestSessionDate ? buildMotmWinners(previousSessionIds) : new Map();
+  const dodWinnersPrevious = latestSessionDate ? buildDodWinners(previousSessionIds) : new Map();
+  const bonusForPrevious = (sessionId: string, playerId: string) => {
+    let bonus = 0;
+    if (motmWinnersPrevious.get(sessionId)?.has(playerId)) bonus += 3;
+    if (dodWinnersPrevious.get(sessionId)?.has(playerId)) bonus -= 1;
+    return bonus;
+  };
   const previousStats = latestSessionDate
     ? aggregateLeagueStats(
         sessionStats
@@ -170,7 +245,7 @@ export default async function LeaguePage({ params, searchParams }: Props) {
           .map((stat) => ({
             sessionId: stat.sessionId,
             playerId: stat.groupPlayerId,
-            totalPoints: stat.totalPoints,
+            totalPoints: stat.totalPoints + bonusForPrevious(stat.sessionId, stat.groupPlayerId),
             winPoints: stat.winPoints,
             sessionsPlayed: 1,
           })),
@@ -178,6 +253,7 @@ export default async function LeaguePage({ params, searchParams }: Props) {
         .map((stat) => ({
           ...stat,
           motmPoints: motmPointsPrevious.get(stat.playerId) ?? 0,
+          dodPoints: dodPointsPrevious.get(stat.playerId) ?? 0,
         }))
         .sort(byMetricDesc)
     : [];
@@ -234,6 +310,7 @@ export default async function LeaguePage({ params, searchParams }: Props) {
     let cumulativeTotal = 0;
     let cumulativeWin = 0;
     let cumulativeMotm = 0;
+    let cumulativeDod = 0;
     let sessionCount = 0;
     for (const stat of ordered) {
       sessionCount += 1;
@@ -241,6 +318,11 @@ export default async function LeaguePage({ params, searchParams }: Props) {
       cumulativeWin += stat.winPoints;
       if (motmWinnersAll.get(stat.sessionId)?.has(playerId)) {
         cumulativeMotm += 1;
+        cumulativeTotal += 3;
+      }
+      if (dodWinnersAll.get(stat.sessionId)?.has(playerId)) {
+        cumulativeDod += 1;
+        cumulativeTotal -= 1;
       }
 
       const value =
@@ -252,7 +334,9 @@ export default async function LeaguePage({ params, searchParams }: Props) {
               ? cumulativeWin
               : selectedMetric === "motmPoints"
                 ? cumulativeMotm
-                : cumulativeWin / sessionCount;
+                : selectedMetric === "dodPoints"
+                  ? cumulativeDod
+                  : cumulativeWin / sessionCount;
 
       chartData.push({
         playerId,

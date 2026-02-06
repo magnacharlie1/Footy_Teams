@@ -22,6 +22,7 @@ model User {
   groupPlayers    GroupPlayer[]
   sessionsCreated MatchSession[] @relation("SessionsCreated")
   motmVotes       MotmVote[]     @relation("UserVotes")
+  dickOfDayVotes  DickOfDayVote[] @relation("UserDickVotes")
 }
 
 model Account {
@@ -129,6 +130,7 @@ model GroupPlayer {
   assignments  TeamAssignment[]
   sessionStats SessionStat[]
   motmVotes    MotmVote[]           @relation("PlayerVotes")
+  dickOfDayVotes DickOfDayVote[]    @relation("PlayerDickVotes")
 
   @@unique([groupId, normalizedName])
   @@unique([groupId, nicknameNormalized])
@@ -172,6 +174,7 @@ model MatchSession {
   fixtures         Fixture[]
   sessionStats     SessionStat[]
   motmVotes        MotmVote[]
+  dickOfDayVotes   DickOfDayVote[]
   TeamAssignment   TeamAssignment[]
 
   @@index([groupId])
@@ -274,5 +277,21 @@ model MotmVote {
   votedPlayer GroupPlayer  @relation("PlayerVotes", fields: [votedGroupPlayerId], references: [id])
 
   @@unique([sessionId, voterUserId, rank])
+  @@index([votedGroupPlayerId])
+}
+
+model DickOfDayVote {
+  id                 String   @id @default(cuid())
+  sessionId          String
+  voterUserId        String
+  votedGroupPlayerId String
+  points             Int      @default(1)
+  createdAt          DateTime @default(now())
+
+  session     MatchSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  voter       User         @relation("UserDickVotes", fields: [voterUserId], references: [id])
+  votedPlayer GroupPlayer  @relation("PlayerDickVotes", fields: [votedGroupPlayerId], references: [id])
+
+  @@unique([sessionId, voterUserId])
   @@index([votedGroupPlayerId])
 }

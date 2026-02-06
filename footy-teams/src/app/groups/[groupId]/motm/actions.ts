@@ -44,6 +44,7 @@ export async function openMotmAction(groupId: string, sessionId: string) {
   });
 
   revalidatePath(`/groups/${groupId}/motm`);
+  revalidatePath(`/groups/${groupId}/league`);
 }
 
 export async function closeMotmAction(groupId: string, sessionId: string) {
@@ -105,10 +106,11 @@ export async function submitMotmBallotAction(
   const first = String(formData.get("firstChoice") ?? "");
   const second = String(formData.get("secondChoice") ?? "");
   const third = String(formData.get("thirdChoice") ?? "");
+  const dodChoice = String(formData.get("dodChoice") ?? "");
 
-  const choices = [first, second, third];
+  const choices = [first, second, third, dodChoice];
   if (choices.some((value) => !value)) {
-    throw new Error("All three choices are required");
+    throw new Error("All choices are required");
   }
   const unique = new Set(choices);
   if (unique.size !== choices.length) {
@@ -124,6 +126,9 @@ export async function submitMotmBallotAction(
     await tx.motmVote.deleteMany({
       where: { sessionId, voterUserId: userId },
     });
+    await tx.dickOfDayVote.deleteMany({
+      where: { sessionId, voterUserId: userId },
+    });
 
     await tx.motmVote.createMany({
       data: [
@@ -131,6 +136,14 @@ export async function submitMotmBallotAction(
         { sessionId, voterUserId: userId, votedGroupPlayerId: second, rank: 2, points: 2 },
         { sessionId, voterUserId: userId, votedGroupPlayerId: third, rank: 3, points: 1 },
       ],
+    });
+    await tx.dickOfDayVote.create({
+      data: {
+        sessionId,
+        voterUserId: userId,
+        votedGroupPlayerId: dodChoice,
+        points: 1,
+      },
     });
   });
 
