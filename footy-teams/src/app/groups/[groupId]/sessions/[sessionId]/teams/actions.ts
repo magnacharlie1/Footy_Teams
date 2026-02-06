@@ -2,7 +2,7 @@
 
 import "server-only";
 
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { performance } from "node:perf_hooks";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -174,7 +174,7 @@ export async function saveTeamsAction(
 
   revalidatePath(`/groups/${groupId}/sessions/${sessionId}`);
   revalidatePath(`/groups/${groupId}/sessions/${sessionId}/teams`);
-  revalidateTag(`group-history-${groupId}`);
+  updateTag(`group-history-${groupId}`);
   markStep("revalidate");
 
   const durationMs = Math.round(performance.now() - startedAt);
