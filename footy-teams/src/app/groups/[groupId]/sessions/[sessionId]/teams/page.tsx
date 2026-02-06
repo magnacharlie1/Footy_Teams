@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { performance } from "node:perf_hooks";
 
 import { auth } from "@/auth";
 import { TeamBuilder } from "./team-builder";
@@ -12,14 +13,25 @@ type Props = {
 };
 
 export default async function TeamBuilderPage({ params }: Props) {
+  const startedAt = performance.now();
+  let stepStartedAt = startedAt;
+  const stepDurations: Record<string, number> = {};
+  const markStep = (label: string) => {
+    const now = performance.now();
+    stepDurations[label] = Math.round(now - stepStartedAt);
+    stepStartedAt = now;
+  };
+
   const { groupId, sessionId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
+  markStep("auth");
 
   const membership = await prisma.groupMember.findFirst({
     where: { groupId, userId: session.user.id, isActive: true },
   });
   if (!membership) notFound();
+  markStep("membership");
 
   const matchSession = await prisma.matchSession.findUnique({
     where: { id: sessionId },
@@ -36,6 +48,7 @@ export default async function TeamBuilderPage({ params }: Props) {
   });
 
   if (!matchSession) notFound();
+  markStep("session_lookup");
 
   const history = await prisma.matchSession.findMany({
     where: { groupId },
@@ -44,6 +57,7 @@ export default async function TeamBuilderPage({ params }: Props) {
       teams: { include: { assignments: true } },
     },
   });
+  markStep("history");
 
   const sessionStats = history.flatMap((s) =>
     computeSessionStats({
@@ -62,8 +76,10 @@ export default async function TeamBuilderPage({ params }: Props) {
       ),
     }),
   );
+  markStep("session_stats");
 
   const leagueStats = aggregateLeagueStats(sessionStats);
+  markStep("league_stats");
   const weightedLookup = new Map<string, number>(
     leagueStats.map((stat) => [stat.playerId, stat.weightedPoints]),
   );
@@ -79,6 +95,7 @@ export default async function TeamBuilderPage({ params }: Props) {
       teamId: currentTeamId ?? null,
     };
   });
+  markStep("players");
 
   const canEditTeams =
     membership.role === "ADMIN" ||
@@ -86,6 +103,13 @@ export default async function TeamBuilderPage({ params }: Props) {
     membership.id === matchSession.teamEditorMemberId;
 
   const saveAction = saveTeamsAction.bind(null, sessionId, groupId);
+
+  const durationMs = Math.round(performance.now() - startedAt);
+  console.info(
+    `[perf] teamBuilderPage session=${sessionId} total=${durationMs}ms steps=${JSON.stringify(
+      stepDurations,
+    )}`,
+  );
 
   return (
     <TeamBuilder
