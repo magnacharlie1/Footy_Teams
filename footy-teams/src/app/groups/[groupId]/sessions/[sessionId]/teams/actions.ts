@@ -18,10 +18,18 @@ export async function saveTeamsAction(
   input: SaveAssignmentsInput,
 ) {
   const startedAt = performance.now();
+  let stepStartedAt = startedAt;
+  const stepDurations: Record<string, number> = {};
+  const markStep = (label: string) => {
+    const now = performance.now();
+    stepDurations[label] = Math.round(now - stepStartedAt);
+    stepStartedAt = now;
+  };
   const session = await auth();
   if (!session?.user) {
     throw new Error("Unauthorized");
   }
+  markStep("auth");
 
   const membership = await prisma.groupMember.findFirst({
     where: { groupId, userId: session.user.id, isActive: true },
@@ -29,6 +37,7 @@ export async function saveTeamsAction(
   if (!membership) {
     throw new Error("Team editor access required");
   }
+  markStep("membership");
 
   const matchSession = await prisma.matchSession.findUnique({
     where: { id: sessionId },
@@ -47,6 +56,7 @@ export async function saveTeamsAction(
   if (!canEditTeams) {
     throw new Error("Team editor access required");
   }
+  markStep("session_lookup");
 
   await prisma.$transaction(async (tx) => {
     const existingAssignments = await tx.teamAssignment.findMany({
@@ -160,14 +170,16 @@ export async function saveTeamsAction(
       });
     }
   });
+  markStep("transaction");
 
   revalidatePath(`/groups/${groupId}/sessions/${sessionId}`);
   revalidatePath(`/groups/${groupId}/sessions/${sessionId}/teams`);
+  markStep("revalidate");
 
   const durationMs = Math.round(performance.now() - startedAt);
   console.info(
     `[perf] saveTeamsAction session=${sessionId} assignments=${input.assignments.length} publish=${Boolean(
       input.publish,
-    )} ${durationMs}ms`,
+    )} total=${durationMs}ms steps=${JSON.stringify(stepDurations)}`,
   );
 }
