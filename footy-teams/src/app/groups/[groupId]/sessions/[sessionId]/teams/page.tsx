@@ -1,6 +1,5 @@
 import { notFound, redirect } from "next/navigation";
 import { unstable_cache } from "next/cache";
-import { performance } from "node:perf_hooks";
 
 import { auth } from "@/auth";
 import { TeamBuilder } from "./team-builder";
@@ -70,19 +69,9 @@ async function loadGroupHistoryStats(groupId: string) {
 }
 
 export default async function TeamBuilderPage({ params }: Props) {
-  const startedAt = performance.now();
-  let stepStartedAt = startedAt;
-  const stepDurations: Record<string, number> = {};
-  const markStep = (label: string) => {
-    const now = performance.now();
-    stepDurations[label] = Math.round(now - stepStartedAt);
-    stepStartedAt = now;
-  };
-
   const { groupId, sessionId } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
-  markStep("auth");
 
   const [membership, matchSession, historyStats] = await Promise.all([
     prisma.groupMember.findFirst({
@@ -108,13 +97,9 @@ export default async function TeamBuilderPage({ params }: Props) {
     }),
     loadGroupHistoryStats(groupId),
   ]);
-  markStep("membership+session+history");
-
   if (!membership) notFound();
   if (!matchSession) notFound();
 
-  markStep("session_stats");
-  markStep("league_stats");
   const weightedLookup = new Map<string, number>(historyStats.weightedLookupEntries);
 
   const players = matchSession.participants.map((p) => {
@@ -128,21 +113,12 @@ export default async function TeamBuilderPage({ params }: Props) {
       teamId: currentTeamId ?? null,
     };
   });
-  markStep("players");
-
   const canEditTeams =
     membership.role === "ADMIN" ||
     membership.canEditTeams ||
     membership.id === matchSession.teamEditorMemberId;
 
   const saveAction = saveTeamsAction.bind(null, sessionId, groupId);
-
-  const durationMs = Math.round(performance.now() - startedAt);
-  console.info(
-    `[perf] teamBuilderPage session=${sessionId} total=${durationMs}ms steps=${JSON.stringify(
-      stepDurations,
-    )}`,
-  );
 
   return (
     <TeamBuilder
