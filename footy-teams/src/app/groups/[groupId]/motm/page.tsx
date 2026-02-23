@@ -113,6 +113,10 @@ export default async function MotmPage({ params, searchParams }: Props) {
       .filter((userId): userId is string => Boolean(userId)) ?? [],
   );
   const canVote = participantUserIds.has(session.user.id);
+  const voterParticipant = selectedSession?.participants.find(
+    (participant) => participant.player.userId === session.user.id,
+  );
+  const selfId = voterParticipant?.groupPlayerId;
 
   return (
     <div className="container py-8 space-y-6">
@@ -154,6 +158,7 @@ export default async function MotmPage({ params, searchParams }: Props) {
               <MotmBallotForm
                 action={submitMotmBallotAction.bind(null, groupId, selectedSession.id)}
                 options={participantOptions ?? []}
+                selfId={selfId}
                 disabled={!canVote}
               />
             ) : (

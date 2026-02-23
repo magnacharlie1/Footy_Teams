@@ -26,7 +26,11 @@ export function PlayerMetricChart({ data, yLabel }: Props) {
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
     );
     const maxValue = Math.max(0, ...sortedData.map((point) => point.value));
-    const yMax = Math.max(1, Math.ceil(maxValue * 1.1));
+    const minValue = Math.min(0, ...sortedData.map((point) => point.value));
+    const span = maxValue - minValue;
+    const padding = Math.max(1, Math.ceil(span * 0.1));
+    const yMax = Math.ceil(maxValue + padding);
+    const yMin = Math.floor(minValue - padding);
     const lineColor = "#0f766e";
     const dotColor = "#14b8a6";
 
@@ -58,14 +62,19 @@ export function PlayerMetricChart({ data, yLabel }: Props) {
         label: yLabel,
         labelAnchor: "top",
         labelOffset: 14,
-        domain: [0, yMax],
+        domain: [yMin, yMax],
         tickPadding: 6,
         tickSize: 6,
         tickFormat: (d) => Number(d).toFixed(0),
       },
       marks: [
         Plot.gridY({ stroke: "#cbd5e1", strokeOpacity: 0.9 }),
-        Plot.ruleY([0], { stroke: "#94a3b8", strokeOpacity: 0.6 }),
+        Plot.ruleY([0], {
+          stroke: "#000000",
+          strokeOpacity: 1,
+          strokeWidth: 1.6,
+          strokeDasharray: "4 3",
+        }),
         Plot.axisX(),
         Plot.axisY(),
         Plot.areaY(sortedData, {

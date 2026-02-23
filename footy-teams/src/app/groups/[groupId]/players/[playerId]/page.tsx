@@ -16,12 +16,12 @@ const metricOptions = [
   {
     value: "totalPoints",
     label: "Total points",
-    description: "Points earned from goals your team scores, even in a loss.",
+    description: "3 for a win, 1 for a draw, plus 3 for each MoTM.",
   },
   {
     value: "weightedPoints",
     label: "Weighted points",
-    description: "Average goals scored per session across all sessions played.",
+    description: "Average total points per session across all sessions played.",
   },
   {
     value: "totalWinPoints",
@@ -32,6 +32,11 @@ const metricOptions = [
     value: "weightedWinPoints",
     label: "Weighted win points",
     description: "Average win points per session across all sessions played.",
+  },
+  {
+    value: "goalDiff",
+    label: "Goal difference",
+    description: "Total goal difference across all fixtures played.",
   },
   {
     value: "motmPoints",
@@ -69,11 +74,58 @@ export default async function PlayerPage({ params, searchParams }: Props) {
     where: { groupPlayerId: playerId, session: { groupId } },
     select: {
       sessionId: true,
-      totalPoints: true,
       winPoints: true,
       session: { select: { sessionDate: true, createdAt: true } },
     },
   });
+
+  const sessionsWithTeams = await prisma.matchSession.findMany({
+    where: {
+      groupId,
+      teams: {
+        some: {
+          assignments: { some: { groupPlayerId: playerId } },
+        },
+      },
+    },
+    select: {
+      id: true,
+      fixtures: { select: { teamAId: true, teamBId: true, teamAScore: true, teamBScore: true } },
+      teams: {
+        include: {
+          assignments: { select: { groupPlayerId: true, teamId: true } },
+        },
+      },
+    },
+  });
+
+  const goalDiffBySession = new Map<string, number>();
+  for (const sessionEntry of sessionsWithTeams) {
+    let playerTeamId: string | null = null;
+    for (const team of sessionEntry.teams) {
+      if (team.assignments.some((a) => a.groupPlayerId === playerId)) {
+        playerTeamId = team.id;
+        break;
+      }
+    }
+    if (!playerTeamId) continue;
+
+    for (const fixture of sessionEntry.fixtures) {
+      const scoreA = fixture.teamAScore ?? 0;
+      const scoreB = fixture.teamBScore ?? 0;
+      if (fixture.teamAId === playerTeamId) {
+        goalDiffBySession.set(
+          sessionEntry.id,
+          (goalDiffBySession.get(sessionEntry.id) ?? 0) + (scoreA - scoreB),
+        );
+      } else if (fixture.teamBId === playerTeamId) {
+        goalDiffBySession.set(
+          sessionEntry.id,
+          (goalDiffBySession.get(sessionEntry.id) ?? 0) + (scoreB - scoreA),
+        );
+      }
+    }
+  }
 
   const motmVotes = await prisma.motmVote.findMany({
     where: { session: { groupId } },
@@ -142,19 +194,20 @@ export default async function PlayerPage({ params, searchParams }: Props) {
   let cumulativeWin = 0;
   let cumulativeMotm = 0;
   let cumulativeDod = 0;
+  let cumulativeGoalDiff = 0;
   let sessionCount = 0;
 
   const data = orderedStats.map((stat) => {
     sessionCount += 1;
-    cumulativeTotal += stat.totalPoints;
+    cumulativeTotal += stat.winPoints;
     cumulativeWin += stat.winPoints;
+    cumulativeGoalDiff += goalDiffBySession.get(stat.sessionId) ?? 0;
     if (winnersBySession.get(stat.sessionId)?.has(playerId)) {
       cumulativeMotm += 1;
       cumulativeTotal += 3;
     }
     if (dodWinnersBySession.get(stat.sessionId)?.has(playerId)) {
       cumulativeDod += 1;
-      cumulativeTotal -= 1;
     }
 
     const value =
@@ -164,6 +217,8 @@ export default async function PlayerPage({ params, searchParams }: Props) {
           ? cumulativeTotal / sessionCount
           : selectedMetric === "totalWinPoints"
             ? cumulativeWin
+            : selectedMetric === "goalDiff"
+              ? cumulativeGoalDiff
             : selectedMetric === "motmPoints"
               ? cumulativeMotm
               : selectedMetric === "dodPoints"

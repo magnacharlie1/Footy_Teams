@@ -12,10 +12,11 @@ type PlayerOption = {
 type Props = {
   action: (formData: FormData) => Promise<void>;
   options: PlayerOption[];
+  selfId?: string;
   disabled?: boolean;
 };
 
-export function MotmBallotForm({ action, options, disabled = false }: Props) {
+export function MotmBallotForm({ action, options, selfId, disabled = false }: Props) {
   const [firstChoice, setFirstChoice] = useState("");
   const [secondChoice, setSecondChoice] = useState("");
   const [thirdChoice, setThirdChoice] = useState("");
@@ -29,6 +30,7 @@ export function MotmBallotForm({ action, options, disabled = false }: Props) {
   const optionList = options.map((option) => ({
     ...option,
     isSelected: disabledIds.has(option.id),
+    isSelf: Boolean(selfId && option.id === selfId),
   }));
 
   return (
@@ -52,7 +54,9 @@ export function MotmBallotForm({ action, options, disabled = false }: Props) {
             <option
               key={player.id}
               value={player.id}
-              disabled={player.isSelected && player.id !== firstChoice}
+              disabled={
+                (player.isSelected && player.id !== firstChoice) || player.isSelf
+              }
             >
               {player.name}
             </option>
@@ -78,7 +82,9 @@ export function MotmBallotForm({ action, options, disabled = false }: Props) {
             <option
               key={player.id}
               value={player.id}
-              disabled={player.isSelected && player.id !== secondChoice}
+              disabled={
+                (player.isSelected && player.id !== secondChoice) || player.isSelf
+              }
             >
               {player.name}
             </option>
@@ -104,7 +110,9 @@ export function MotmBallotForm({ action, options, disabled = false }: Props) {
             <option
               key={player.id}
               value={player.id}
-              disabled={player.isSelected && player.id !== thirdChoice}
+              disabled={
+                (player.isSelected && player.id !== thirdChoice) || player.isSelf
+              }
             >
               {player.name}
             </option>
@@ -130,7 +138,9 @@ export function MotmBallotForm({ action, options, disabled = false }: Props) {
             <option
               key={player.id}
               value={player.id}
-              disabled={player.isSelected && player.id !== dodChoice}
+              disabled={
+                (player.isSelected && player.id !== dodChoice) || player.isSelf
+              }
             >
               {player.name}
             </option>

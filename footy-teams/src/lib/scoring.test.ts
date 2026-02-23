@@ -15,7 +15,7 @@ const fixtures = [
 ];
 
 describe("computeSessionStats", () => {
-  it("assigns goals-for points and win points", () => {
+  it("assigns win points totals", () => {
     const stats = computeSessionStats({
       sessionId: "s1",
       fixtures,
@@ -23,11 +23,11 @@ describe("computeSessionStats", () => {
     });
 
     const playerA = stats.find((s) => s.playerId === "a");
-    expect(playerA?.totalPoints).toBe(5); // 3 + 2
+    expect(playerA?.totalPoints).toBe(4); // win + draw
     expect(playerA?.winPoints).toBe(4); // win + draw
 
     const playerC = stats.find((s) => s.playerId === "c");
-    expect(playerC?.totalPoints).toBe(3); // 1 + 2
+    expect(playerC?.totalPoints).toBe(1); // loss + draw
     expect(playerC?.winPoints).toBe(1); // loss + draw
   });
 });
@@ -47,7 +47,7 @@ describe("aggregateLeagueStats", () => {
 
     const leaderboard = aggregateLeagueStats(sessionStats);
     const playerA = leaderboard.find((l) => l.playerId === "a");
-    expect(playerA?.weightedPoints).toBeCloseTo(2.5); // (5 + 0) / 2
+    expect(playerA?.weightedPoints).toBeCloseTo(2); // (4 + 0) / 2
     expect(playerA?.weightedWinPoints).toBeCloseTo(2); // (4 + 0) / 2
   });
 });

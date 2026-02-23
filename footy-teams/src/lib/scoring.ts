@@ -54,10 +54,10 @@ export function computeSessionStats({
       if (!record) continue;
 
       if (teamId === fixture.teamAId) {
-        record.totalPoints += fixture.teamAScore;
+        record.totalPoints += win.a;
         record.winPoints += win.a;
       } else if (teamId === fixture.teamBId) {
-        record.totalPoints += fixture.teamBScore;
+        record.totalPoints += win.b;
         record.winPoints += win.b;
       }
     }
@@ -105,4 +105,27 @@ export function aggregateLeagueStats(
       : 0,
     sessionsPlayed: entry.sessionsPlayed,
   }));
+}
+
+const POWER_GD_WEIGHT = 0.5;
+const POWER_MOTM_WEIGHT = 0.35;
+
+export function computePowerRating({
+  weightedPoints,
+  goalDiff,
+  motmPoints,
+  sessionsPlayed,
+}: {
+  weightedPoints: number;
+  goalDiff: number;
+  motmPoints: number;
+  sessionsPlayed: number;
+}) {
+  const weightedGoalDiff = sessionsPlayed ? goalDiff / sessionsPlayed : 0;
+  const weightedMotm = sessionsPlayed ? motmPoints / sessionsPlayed : 0;
+  return (
+    weightedPoints +
+    weightedGoalDiff * POWER_GD_WEIGHT +
+    weightedMotm * POWER_MOTM_WEIGHT
+  );
 }

@@ -4,7 +4,7 @@ import { unstable_cache } from "next/cache";
 import { auth } from "@/auth";
 import { TeamBuilder } from "./team-builder";
 import { prisma } from "@/lib/prisma";
-import { aggregateLeagueStats, computeSessionStats } from "@/lib/scoring";
+import { aggregateLeagueStats, computePowerRating, computeSessionStats } from "@/lib/scoring";
 import { saveTeamsAction } from "./actions";
 import { safeDisplayName } from "@/lib/player-name";
 
@@ -35,6 +35,40 @@ async function loadGroupHistoryStats(groupId: string) {
         },
       });
 
+      const motmVotes = await prisma.motmVote.findMany({
+        where: { session: { groupId } },
+        select: { sessionId: true, votedGroupPlayerId: true, points: true },
+      });
+
+      const pointsBySession = new Map<string, Map<string, number>>();
+      const motmTotalPointsByPlayer = new Map<string, number>();
+      for (const vote of motmVotes) {
+        const sessionPoints = pointsBySession.get(vote.sessionId) ?? new Map<string, number>();
+        sessionPoints.set(
+          vote.votedGroupPlayerId,
+          (sessionPoints.get(vote.votedGroupPlayerId) ?? 0) + vote.points,
+        );
+        pointsBySession.set(vote.sessionId, sessionPoints);
+        motmTotalPointsByPlayer.set(
+          vote.votedGroupPlayerId,
+          (motmTotalPointsByPlayer.get(vote.votedGroupPlayerId) ?? 0) + vote.points,
+        );
+      }
+
+      const motmWinnersBySession = new Map<string, Set<string>>();
+      for (const [sessionId, sessionPoints] of pointsBySession.entries()) {
+        let max = 0;
+        for (const value of sessionPoints.values()) {
+          if (value > max) max = value;
+        }
+        if (max === 0) continue;
+        const winners = new Set<string>();
+        for (const [playerId, value] of sessionPoints.entries()) {
+          if (value === max) winners.add(playerId);
+        }
+        motmWinnersBySession.set(sessionId, winners);
+      }
+
       const sessionStats = history.flatMap((s) =>
         computeSessionStats({
           sessionId: s.id,
@@ -50,14 +84,53 @@ async function loadGroupHistoryStats(groupId: string) {
               teamId: a.teamId,
             })),
           ),
-        }),
+        }).map((stat) => ({
+          ...stat,
+          totalPoints:
+            stat.totalPoints +
+            (motmWinnersBySession.get(stat.sessionId)?.has(stat.playerId) ? 3 : 0),
+        })),
       );
+
+      const goalDiffByPlayer = new Map<string, number>();
+      for (const session of history) {
+        const playersByTeam = new Map<string, string[]>();
+        for (const team of session.teams) {
+          for (const assignment of team.assignments) {
+            const list = playersByTeam.get(assignment.teamId) ?? [];
+            list.push(assignment.groupPlayerId);
+            playersByTeam.set(assignment.teamId, list);
+          }
+        }
+
+        for (const fixture of session.fixtures) {
+          const scoreA = fixture.teamAScore ?? 0;
+          const scoreB = fixture.teamBScore ?? 0;
+          const diffA = scoreA - scoreB;
+          const diffB = scoreB - scoreA;
+
+          const teamAPlayers = playersByTeam.get(fixture.teamAId) ?? [];
+          for (const playerId of teamAPlayers) {
+            goalDiffByPlayer.set(playerId, (goalDiffByPlayer.get(playerId) ?? 0) + diffA);
+          }
+
+          const teamBPlayers = playersByTeam.get(fixture.teamBId) ?? [];
+          for (const playerId of teamBPlayers) {
+            goalDiffByPlayer.set(playerId, (goalDiffByPlayer.get(playerId) ?? 0) + diffB);
+          }
+        }
+      }
 
       const leagueStats = aggregateLeagueStats(sessionStats);
       return {
         weightedLookupEntries: leagueStats.map((stat) => [
           stat.playerId,
-          stat.weightedPoints,
+          computePowerRating({
+            weightedPoints: stat.weightedPoints,
+            goalDiff: goalDiffByPlayer.get(stat.playerId) ?? 0,
+            motmPoints: motmTotalPointsByPlayer.get(stat.playerId) ?? 0,
+            sessionsPlayed: stat.sessionsPlayed,
+          }),
         ]) as Array<[string, number]>,
       };
     },

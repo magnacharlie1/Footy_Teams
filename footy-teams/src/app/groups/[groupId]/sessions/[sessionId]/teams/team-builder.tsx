@@ -189,7 +189,7 @@ export function TeamBuilder({
         <CardHeader>
           <CardTitle>Drag players into teams</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Uneven teams are allowed. Auto mode uses weighted points and greedy balancing.
+            Uneven teams are allowed. Auto mode uses power rating (points + goal difference) and greedy balancing.
           </p>
         </CardHeader>
         <CardContent>

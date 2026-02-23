@@ -116,6 +116,9 @@ export async function submitMotmBallotAction(
   if (unique.size !== choices.length) {
     throw new Error("Choices must be different players");
   }
+  if (choices.includes(voterPlayerId)) {
+    throw new Error("You cannot vote for yourself");
+  }
   for (const choice of choices) {
     if (!participantIds.has(choice)) {
       throw new Error("Invalid player selection");
