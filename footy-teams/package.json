@@ -12,7 +12,8 @@
     "prisma:generate": "prisma generate",
     "prisma:format": "prisma format",
     "test": "vitest",
-    "test:watch": "vitest watch"
+    "test:watch": "vitest watch",
+    "typecheck": "tsc --noEmit"
   },
   "prisma": {
     "seed": "npm run prisma:seed"

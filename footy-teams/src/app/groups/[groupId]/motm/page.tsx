@@ -17,10 +17,11 @@ export default async function MotmPage({ params, searchParams }: Props) {
   const { groupId } = await params;
   const { sessionId } = (await searchParams) ?? {};
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  const userId = session?.user?.id;
+  if (!userId) redirect("/login");
 
   const membership = await prisma.groupMember.findFirst({
-    where: { groupId, userId: session.user.id, isActive: true },
+    where: { groupId, userId, isActive: true },
   });
   if (!membership) notFound();
 
@@ -112,9 +113,9 @@ export default async function MotmPage({ params, searchParams }: Props) {
       .map((participant) => participant.player.userId)
       .filter((userId): userId is string => Boolean(userId)) ?? [],
   );
-  const canVote = participantUserIds.has(session.user.id);
+  const canVote = participantUserIds.has(userId);
   const voterParticipant = selectedSession?.participants.find(
-    (participant) => participant.player.userId === session.user.id,
+    (participant) => participant.player.userId === userId,
   );
   const selfId = voterParticipant?.groupPlayerId;
 
