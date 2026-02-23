@@ -512,18 +512,104 @@ export default async function LeaguePage({ params, searchParams }: Props) {
         </CardHeader>
         <CardContent className="space-y-2">
           {selectedMetric === "totalPoints" ? (
-            <div className="grid grid-cols-[40px_1fr_44px_44px_44px_64px_64px_64px] items-center gap-2 border-b border-border pb-2 px-3 text-xs font-semibold text-muted-foreground">
-              <div>Pos</div>
-              <div>Player</div>
-              <div className="text-right">W</div>
-              <div className="text-right">D</div>
-              <div className="text-right">L</div>
-              <div className="text-right">MoTM</div>
-              <div className="text-right">GD</div>
-              <div className="text-right">Pts</div>
+            <div className="overflow-x-auto">
+              <div className="min-w-[560px] space-y-2">
+                <div className="grid grid-cols-[40px_1fr_44px_44px_44px_64px_64px_64px] items-center gap-2 border-b border-border pb-2 px-3 text-xs font-semibold text-muted-foreground">
+                  <div>Pos</div>
+                  <div>Player</div>
+                  <div className="text-right">W</div>
+                  <div className="text-right">D</div>
+                  <div className="text-right">L</div>
+                  <div className="text-right">MoTM</div>
+                  <div className="text-right">GD</div>
+                  <div className="text-right">Pts</div>
+                </div>
+                {rankedStats.map((stat, index) => {
+                  const lastRank = previousRank.get(stat.playerId);
+                  const hasPrevious = previousStats.length > 0;
+                  const isTopHalf = index < Math.ceil(rankedStats.length / 2);
+                  const movement = hasPrevious
+                    ? stat.rank < (lastRank ?? stat.rank)
+                      ? "up"
+                      : stat.rank > (lastRank ?? stat.rank)
+                        ? "down"
+                        : "same"
+                    : isTopHalf
+                      ? "up"
+                      : "down";
+
+                  return (
+                    <Link
+                      key={stat.playerId}
+                      href={`/groups/${groupId}/players/${stat.playerId}?metric=${selectedMetric}`}
+                      className="block rounded-lg border border-border px-3 py-2 text-foreground transition hover:bg-muted/40"
+                    >
+                      <div className="grid grid-cols-[40px_1fr_44px_44px_44px_64px_64px_64px] items-center gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="text-xs font-semibold text-muted-foreground">
+                            {stat.rankLabel}
+                          </div>
+                          <div
+                            className={
+                              movement === "up"
+                                ? "text-xs font-semibold text-emerald-600"
+                                : movement === "down"
+                                  ? "text-xs font-semibold text-rose-600"
+                                  : "text-xs font-semibold text-muted-foreground"
+                            }
+                          >
+                            {movement === "up" ? (
+                              <svg
+                                viewBox="0 0 10 10"
+                                className="h-3 w-3"
+                                aria-hidden="true"
+                                focusable="false"
+                              >
+                                <path className="fill-current" d="M5 1 L9 9 H1 Z" />
+                              </svg>
+                            ) : movement === "down" ? (
+                              <svg
+                                viewBox="0 0 10 10"
+                                className="h-3 w-3"
+                                aria-hidden="true"
+                                focusable="false"
+                              >
+                                <path className="fill-current" d="M1 1 H9 L5 9 Z" />
+                              </svg>
+                            ) : (
+                              "-"
+                            )}
+                          </div>
+                        </div>
+                        <div className="font-semibold text-foreground">
+                          {playerLookup.get(stat.playerId) ?? "Unknown player"}
+                        </div>
+                        <div className="text-right text-xs text-muted-foreground">
+                          {resultsByPlayer.get(stat.playerId)?.wins ?? 0}
+                        </div>
+                        <div className="text-right text-xs text-muted-foreground">
+                          {resultsByPlayer.get(stat.playerId)?.draws ?? 0}
+                        </div>
+                        <div className="text-right text-xs text-muted-foreground">
+                          {resultsByPlayer.get(stat.playerId)?.losses ?? 0}
+                        </div>
+                        <div className="text-right text-xs text-muted-foreground">
+                          {motmPointsAll.get(stat.playerId) ?? 0}
+                        </div>
+                        <div className="text-right text-xs text-muted-foreground">
+                          {stat.goalDiff > 0 ? `+${stat.goalDiff}` : stat.goalDiff}
+                        </div>
+                        <div className="text-right text-xs font-semibold text-foreground">
+                          {formatMetric(metricValue(stat))}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           ) : null}
-          {rankedStats.map((stat, index) => {
+          {selectedMetric !== "totalPoints" ? rankedStats.map((stat, index) => {
             const lastRank = previousRank.get(stat.playerId);
             const hasPrevious = previousStats.length > 0;
             const isTopHalf = index < Math.ceil(rankedStats.length / 2);
@@ -543,116 +629,54 @@ export default async function LeaguePage({ params, searchParams }: Props) {
                 href={`/groups/${groupId}/players/${stat.playerId}?metric=${selectedMetric}`}
                 className="block rounded-lg border border-border px-3 py-2 text-foreground transition hover:bg-muted/40"
               >
-                {selectedMetric === "totalPoints" ? (
-                  <div className="grid grid-cols-[40px_1fr_44px_44px_44px_64px_64px_64px] items-center gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="text-xs font-semibold text-muted-foreground">
-                        {stat.rankLabel}
-                      </div>
-                      <div
-                        className={
-                          movement === "up"
-                            ? "text-xs font-semibold text-emerald-600"
-                            : movement === "down"
-                              ? "text-xs font-semibold text-rose-600"
-                              : "text-xs font-semibold text-muted-foreground"
-                        }
-                      >
-                        {movement === "up" ? (
-                          <svg
-                            viewBox="0 0 10 10"
-                            className="h-3 w-3"
-                            aria-hidden="true"
-                            focusable="false"
-                          >
-                            <path className="fill-current" d="M5 1 L9 9 H1 Z" />
-                          </svg>
-                        ) : movement === "down" ? (
-                          <svg
-                            viewBox="0 0 10 10"
-                            className="h-3 w-3"
-                            aria-hidden="true"
-                            focusable="false"
-                          >
-                            <path className="fill-current" d="M1 1 H9 L5 9 Z" />
-                          </svg>
-                        ) : (
-                          "-"
-                        )}
-                      </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="text-xs font-semibold text-muted-foreground">
+                      {stat.rankLabel}
+                    </div>
+                    <div
+                      className={
+                        movement === "up"
+                          ? "text-xs font-semibold text-emerald-600"
+                          : movement === "down"
+                            ? "text-xs font-semibold text-rose-600"
+                            : "text-xs font-semibold text-muted-foreground"
+                      }
+                    >
+                      {movement === "up" ? (
+                        <svg
+                          viewBox="0 0 10 10"
+                          className="h-3 w-3"
+                          aria-hidden="true"
+                          focusable="false"
+                        >
+                          <path className="fill-current" d="M5 1 L9 9 H1 Z" />
+                        </svg>
+                      ) : movement === "down" ? (
+                        <svg
+                          viewBox="0 0 10 10"
+                          className="h-3 w-3"
+                          aria-hidden="true"
+                          focusable="false"
+                        >
+                          <path className="fill-current" d="M1 1 H9 L5 9 Z" />
+                        </svg>
+                      ) : (
+                        "-"
+                      )}
                     </div>
                     <div className="font-semibold text-foreground">
                       {playerLookup.get(stat.playerId) ?? "Unknown player"}
                     </div>
-                    <div className="text-right text-xs text-muted-foreground">
-                      {resultsByPlayer.get(stat.playerId)?.wins ?? 0}
-                    </div>
-                    <div className="text-right text-xs text-muted-foreground">
-                      {resultsByPlayer.get(stat.playerId)?.draws ?? 0}
-                    </div>
-                    <div className="text-right text-xs text-muted-foreground">
-                      {resultsByPlayer.get(stat.playerId)?.losses ?? 0}
-                    </div>
-                    <div className="text-right text-xs text-muted-foreground">
-                      {motmPointsAll.get(stat.playerId) ?? 0}
-                    </div>
-                    <div className="text-right text-xs text-muted-foreground">
-                      {stat.goalDiff > 0 ? `+${stat.goalDiff}` : stat.goalDiff}
-                    </div>
-                    <div className="text-right text-xs font-semibold text-foreground">
-                      {formatMetric(metricValue(stat))}
-                    </div>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="text-xs font-semibold text-muted-foreground">
-                        {stat.rankLabel}
-                      </div>
-                      <div
-                        className={
-                          movement === "up"
-                            ? "text-xs font-semibold text-emerald-600"
-                            : movement === "down"
-                              ? "text-xs font-semibold text-rose-600"
-                              : "text-xs font-semibold text-muted-foreground"
-                        }
-                      >
-                        {movement === "up" ? (
-                          <svg
-                            viewBox="0 0 10 10"
-                            className="h-3 w-3"
-                            aria-hidden="true"
-                            focusable="false"
-                          >
-                            <path className="fill-current" d="M5 1 L9 9 H1 Z" />
-                          </svg>
-                        ) : movement === "down" ? (
-                          <svg
-                            viewBox="0 0 10 10"
-                            className="h-3 w-3"
-                            aria-hidden="true"
-                            focusable="false"
-                          >
-                            <path className="fill-current" d="M1 1 H9 L5 9 Z" />
-                          </svg>
-                        ) : (
-                          "-"
-                        )}
-                      </div>
-                      <div className="font-semibold text-foreground">
-                        {playerLookup.get(stat.playerId) ?? "Unknown player"}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span>{stat.sessionsPlayed} sessions</span>
-                      <span>{formatMetric(metricValue(stat))} pts</span>
-                    </div>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span>{stat.sessionsPlayed} sessions</span>
+                    <span>{formatMetric(metricValue(stat))} pts</span>
                   </div>
-                )}
+                </div>
               </Link>
             );
-          })}
+          }) : null}
           {rankedStats.length === 0 && (
             <div className="text-sm text-muted-foreground">
               No results yet. Add fixtures and publish teams to build the table.
